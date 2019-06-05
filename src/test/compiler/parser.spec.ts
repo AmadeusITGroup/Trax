@@ -4,6 +4,35 @@ import { parse } from '../../compiler/parser';
 
 describe('Parser', () => {
 
+    it("should ignore files that don't contain @Data", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data } from "./trax";
+            
+            function foo() {
+                return "bar"
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, null, "1");
+    });
+
+    it("should ignore files that contain the ignore comment", async function () {
+        let r = parse(`\
+            // trax:ignore
+            import { Data } from "./trax";
+            
+            @Data class Address {
+                street1: string;
+                street2: string;
+                zipCode: number;
+                valid: boolean;
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, null, "1");
+    });
+
     it("should parse simple types", async function () {
         let r = parse(`\
             // sample 1
@@ -19,40 +48,51 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 49,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Address",
             "classNameEnd": 128,
-            "computedProperties": [],
+
             "pos": 95,
-            "properties": [{
+            "decoPos": 109,
+            "members": [{
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 154,
+                "end": 163,
+                "namePos": 147,
                 "name": "street1",
                 "shallowRef": false,
                 "type": {
                     "kind": "string"
                 }
             }, {
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 187,
+                "end": 196,
+                "namePos": 180,
                 "name": "street2",
                 "shallowRef": false,
                 "type": {
                     "kind": "string"
                 }
             }, {
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 220,
+                "end": 229,
+                "namePos": 213,
                 "name": "zipCode",
                 "shallowRef": false,
                 "type": {
                     "kind": "number"
                 }
             }, {
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 251,
+                "end": 261,
+                "namePos": 246,
                 "name": "valid",
                 "shallowRef": false,
                 "type": {
@@ -72,16 +112,20 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 25,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Foo",
             "pos": 42,
+            "decoPos": 55,
             "classNameEnd": 70,
-            "computedProperties": [],
-            "properties": [{
+            "members": [{
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 92,
+                "end": 98,
+                "namePos": 89,
                 "name": "bar",
                 "shallowRef": false,
                 "type": {
@@ -89,8 +133,10 @@ describe('Parser', () => {
                     "identifier": "Bar"
                 }
             }, {
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 123,
+                "end": 130,
+                "namePos": 115,
                 "name": "$content",
                 "shallowRef": false,
                 "type": {
@@ -111,16 +157,20 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 25,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Foo",
             "pos": 42,
+            "decoPos": 55,
             "classNameEnd": 70,
-            "computedProperties": [],
-            "properties": [{
+            "members": [{
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 92,
+                "end": 100,
+                "namePos": 89,
                 "name": "bar",
                 "shallowRef": false,
                 "type": {
@@ -131,8 +181,10 @@ describe('Parser', () => {
                     }
                 }
             }, {
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 121,
+                "end": 131,
+                "namePos": 117,
                 "name": "blah",
                 "shallowRef": false,
                 "type": {
@@ -158,16 +210,20 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 25,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Foo",
             "pos": 42,
+            "decoPos": 55,
             "classNameEnd": 70,
-            "computedProperties": [],
-            "properties": [{
+            "members": [{
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 93,
+                "end": 119,
+                "namePos": 89,
                 "name": "dict",
                 "shallowRef": false,
                 "type": {
@@ -189,16 +245,20 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 25,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Foo",
             "pos": 42,
+            "decoPos": 55,
             "classNameEnd": 70,
-            "computedProperties": [],
-            "properties": [{
+            "members": [{
+                "kind": "property",
                 "defaultValue": undefined,
-                "end": 97,
+                "end": 103,
+                "namePos": 94,
                 "name": "bar",
                 "shallowRef": true,
                 "type": {
@@ -220,31 +280,39 @@ describe('Parser', () => {
         `, "file1.ts");
 
         assert.deepEqual(r, [{
+            kind: "import",
             insertPos: 25,
             values: { Data: 1 }
         }, {
+            "kind": "data",
             "className": "Foo",
             "pos": 42,
+            "decoPos": 55,
             "classNameEnd": 70,
-            "computedProperties": [],
-            "properties": [
+            "members": [
                 {
+                    "kind": "property",
                     "defaultValue": { end: 98, pos: 94, text: " 123" },
-                    "end": 92,
+                    "end": 99,
+                    "namePos": 89,
                     "name": "bar",
                     "shallowRef": false,
                     "type": { "kind": "number" }
                 },
                 {
+                    "kind": "property",
                     "defaultValue": { end: 134, pos: 128, text: ' "abc"' },
-                    "end": 119,
+                    "end": 135,
+                    "namePos": 116,
                     "name": "baz",
                     "shallowRef": false,
                     "type": { "kind": "string" }
                 },
                 {
+                    "kind": "property",
                     "defaultValue": { end: 164, pos: 158, text: " false" },
-                    "end": 156,
+                    "end": 165,
+                    "namePos": 152,
                     "name": "bar2",
                     "shallowRef": false,
                     "type": { "kind": "boolean" }
@@ -252,6 +320,65 @@ describe('Parser', () => {
             ]
         }], "1");
     })
+
+    it("should parse multiple Data objects in the same file", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                prop: string;
+            }
+
+            @Data class Bar {
+                prop: string;
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            insertPos: 49,
+            values: { Data: 1 }
+        }, {
+            "className": "Foo",
+            "classNameEnd": 95,
+            "kind": "data",
+            "pos": 66,
+            "decoPos": 80,
+            "members": [
+                {
+                    "kind": "property",
+                    "defaultValue": undefined,
+                    "end": 127,
+                    "namePos": 114,
+                    "name": "prop",
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "string"
+                    }
+                }
+            ]
+        }, {
+            "className": "Bar",
+            "classNameEnd": 170,
+            "kind": "data",
+            "pos": 141,
+            "decoPos": 155,
+            "members": [
+                {
+                    "kind": "property",
+                    "defaultValue": undefined,
+                    "end": 202,
+                    "namePos": 189,
+                    "name": "prop",
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "string"
+                    }
+                }
+            ]
+        }], "1");
+    });
 
     // todo parse @computed
 });

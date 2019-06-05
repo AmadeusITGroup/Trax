@@ -1,9 +1,14 @@
 import { TraxImport, DataObject, DataProperty, DataType } from './types';
 import * as ts from "typescript";
 
-const DATA = "Data", REF = "ref";
+const DATA = "Data",
+    REF = "ref",
+    RX_IGNORE_COMMENT = /\/\/\s*trax:ignore/i,
+    RX_FILE = /\@Data/;
 
 export function parse(src: string, filePath: string): (TraxImport | DataObject)[] | null {
+    if (!isTraxFile(src)) return null;
+
     let srcFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, /*setParentNodes */ true);
     let traxImportFound = false, result: (TraxImport | DataObject)[] | null = [];
 
@@ -48,6 +53,10 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
         return true;
     }
 
+    function isTraxFile(source: string): boolean {
+        return (!source.match(RX_IGNORE_COMMENT) && source.match(RX_FILE) !== null);
+    }
+
     function processImport(node: ts.ImportClause) {
         if (traxImportFound) return;
         if (node.namedBindings) {
@@ -57,6 +66,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                 while (idx--) {
                     if (nmi.elements[idx].name.text === DATA) {
                         traxImport = {
+                            kind: "import",
                             insertPos: nmi.elements[idx].end,
                             values: {}
                         }
@@ -76,13 +86,14 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
     }
 
     function processClass(node: ts.ClassDeclaration) {
-        let isData = false;
+        let isData = false, decoPos = 0;
         if (node.decorators) {
             let decorators = node.decorators, idx = decorators.length, d: ts.Decorator;
             while (idx--) {
                 d = decorators[idx];
                 if (d.expression.kind === ts.SyntaxKind.Identifier && d.expression.getText() === DATA) {
                     isData = true;
+                    decoPos = d.expression.pos - 1;
                     // comment the dataset expression to remove it from generated code (and don't impact line numbers)
                     // this.insert("/* ", d.expression.pos - 1);
                     // this.insert(" */", d.expression.end);
@@ -97,11 +108,12 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
         }
 
         let obj: DataObject = {
+            kind: "data",
             pos: node.pos,
+            decoPos: decoPos,
             className: node.name!.text,
             classNameEnd: node.name!.end,
-            properties: [],
-            computedProperties: []
+            members: []
         }
 
         if (node.members) {
@@ -121,8 +133,10 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
 
                 // add $$ in front of the property name
                 let prop: DataProperty = {
+                    kind: "property",
                     name: "",
-                    end: 0,
+                    namePos: 0,
+                    end: m.end,
                     shallowRef: hasRefDecorator(m),
                     type: undefined,
                     defaultValue: undefined
@@ -130,7 +144,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                 m.forEachChild((c) => {
                     if (c.kind === ts.SyntaxKind.Identifier) {
                         prop.name = c.getText();
-                        prop.end = c.end;
+                        prop.namePos = c.end - prop.name.length;
                     } else {
                         let tp = getTypeObject(c, false);
                         if (tp) {
@@ -140,7 +154,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                         }
                     }
                 });
-                obj.properties.push(prop);
+                obj.members.push(prop);
 
                 // if (processedPropData) {
                 //     processedProps.push(name);

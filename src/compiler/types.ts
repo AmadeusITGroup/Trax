@@ -1,22 +1,26 @@
 
 export interface TraxImport {
+    kind: "import";
     insertPos: number;              // position after the Data import
     values: { [key: string]: 1 };   // list of identifiers defined in the import statement
 }
 
 export interface DataObject {
+    kind: "data";
     pos: number;
+    decoPos: number;                // position of the @Data decorator object
     className: string;
     classNameEnd: number;
-    properties: DataProperty[];
-    computedProperties: ComputedProperty[];
+    members: (DataProperty | ComputedProperty)[];
     // constructor: xxx - tbd: shall we support constructor?
     // validator: xxx - tbd: validator function?
 }
 
 export interface DataProperty {
-    end: number,
+    kind: "property",
     name: string;
+    namePos: number;
+    end: number,
     type: DataType | undefined;
     shallowRef: boolean;
     defaultValue: CodeFragment | undefined;
@@ -25,6 +29,7 @@ export interface DataProperty {
 }
 
 export interface ComputedProperty {
+    kind: "computedProperty",
     name: string;
     code: CodeFragment;
 }

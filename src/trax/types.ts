@@ -1,7 +1,7 @@
 
 
 interface TraxObject {
-    χtrackable: true;
-    χversion: number;
-    χparents: TraxObject[] | undefined;
+    Δtrackable: true;
+    Δversion: number;
+    Δparents: TraxObject[] | undefined;
 }
