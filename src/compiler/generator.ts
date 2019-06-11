@@ -1,7 +1,7 @@
 import { parse } from './parser';
 import { DataObject, TraxImport, DataProperty, ComputedProperty, DataType } from './types';
 
-const DATA = "Data", DATA_DECO = "@" + DATA;
+const DATA = "Data", DATA_DECO = "@" + DATA, RX_LOG = /\/\/\s*trax\:log/;
 
 export function generate(src: string, filePath: string): string {
     let output = src,
@@ -23,6 +23,11 @@ export function generate(src: string, filePath: string): string {
             }
         }
         updateImports();
+    }
+    if (src.match(RX_LOG)) {
+        console.log("-----------------------------------------------------------------------------");
+        console.log("Trax Ouput:");
+        console.log(output);
     }
 
     return output;
@@ -85,7 +90,8 @@ export function generate(src: string, filePath: string): string {
     function processDataObject(n: DataObject) {
 
         // transform @Data decorator -> @ΔD()
-        replace(DATA_DECO, "@ΔD()", n.decoPos);
+        replace(DATA_DECO, "@ΔD", n.decoPos);
+        addImport("ΔD");
 
         let len = n.members.length,
             prop: DataProperty,
@@ -93,7 +99,9 @@ export function generate(src: string, filePath: string): string {
             tp: DataType | undefined,
             typeRef: string,
             factory: string,
-            separator: string;
+            separator: string,
+            undefinedArg1: string,
+            undefinedArg2: string;
         for (let i = 0; len > i; i++) {
             factory = "";
             typeRef = "";
@@ -105,26 +113,42 @@ export function generate(src: string, filePath: string): string {
 
                 tp = prop.type;
                 if (tp) {
+                    factory = typeRef = "";
+
                     if (tp.kind === "string") {
                         typeRef = "string";
                         factory = "ΔfStr";
+                        addImport(factory);
                     } else if (tp.kind === "number") {
                         typeRef = "number";
                         factory = "ΔfNbr";
+                        addImport(factory);
                     } else if (tp.kind === "boolean") {
                         typeRef = "boolean";
                         factory = "ΔfBool";
+                        addImport(factory);
+                    } else if (tp.kind === "reference") {
+                        typeRef = tp.identifier;
+                        factory = "Δf(" + typeRef + ")";
+                        addImport("Δf");
+                    } else {
+                        error("Generator doesn't support type " + tp.kind + " yet", n);
+                    }
+
+                    if (tp.canBeUndefined) {
+                        undefinedArg1 = ", 1";
+                        undefinedArg2 = " | undefined";
+                    } else {
+                        undefinedArg1 = undefinedArg2 = "";
                     }
 
                     if (factory) {
-                        addImport(factory);
-
                         separator = endsWithSemiColon(prop.end) ? "" : ";";
 
                         // add new property definition
                         // e.g. @Δp(ΔfStr) street: string;
                         addImport("Δp");
-                        insert(`${separator} @Δp(${factory}) ${prop.name}: ${typeRef};`, prop.end);
+                        insert(`${separator} @Δp(${factory}${undefinedArg1}) ${prop.name}: ${typeRef}${undefinedArg2};`, prop.end);
                     }
 
                 } else {

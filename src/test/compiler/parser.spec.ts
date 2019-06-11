@@ -55,7 +55,7 @@ describe('Parser', () => {
             "kind": "data",
             "className": "Address",
             "classNameEnd": 128,
-
+            "log": false,
             "pos": 95,
             "decoPos": 109,
             "members": [{
@@ -121,6 +121,7 @@ describe('Parser', () => {
             "pos": 42,
             "decoPos": 55,
             "classNameEnd": 70,
+            "log": false,
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
@@ -166,6 +167,7 @@ describe('Parser', () => {
             "pos": 42,
             "decoPos": 55,
             "classNameEnd": 70,
+            "log": false,
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
@@ -219,6 +221,7 @@ describe('Parser', () => {
             "pos": 42,
             "decoPos": 55,
             "classNameEnd": 70,
+            "log": false,
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
@@ -254,6 +257,7 @@ describe('Parser', () => {
             "pos": 42,
             "decoPos": 55,
             "classNameEnd": 70,
+            "log": false,
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
@@ -289,6 +293,7 @@ describe('Parser', () => {
             "pos": 42,
             "decoPos": 55,
             "classNameEnd": 70,
+            "log": false,
             "members": [
                 {
                     "kind": "property",
@@ -342,6 +347,7 @@ describe('Parser', () => {
         }, {
             "className": "Foo",
             "classNameEnd": 95,
+            "log": false,
             "kind": "data",
             "pos": 66,
             "decoPos": 80,
@@ -361,6 +367,7 @@ describe('Parser', () => {
         }, {
             "className": "Bar",
             "classNameEnd": 170,
+            "log": false,
             "kind": "data",
             "pos": 141,
             "decoPos": 155,
@@ -377,6 +384,80 @@ describe('Parser', () => {
                     }
                 }
             ]
+        }], "1");
+    });
+
+    it("should support log flag", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data, log } from "./trax";
+            let foo = "bar";
+
+            @Data @log class Address {
+                street: string;
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            insertPos: 49,
+            values: { Data: 1, log: 1 },
+        }, {
+            "kind": "data",
+            "className": "Address",
+            "classNameEnd": 138,
+            "pos": 100,
+            "decoPos": 114,
+            "log": true,
+            "members": [{
+                "kind": "property",
+                "defaultValue": undefined,
+                "end": 172,
+                "namePos": 157,
+                "name": "street",
+                "shallowRef": false,
+                "type": {
+                    "kind": "string"
+                }
+            }]
+        }], "1");
+    });
+
+    it("should support union types with undefined", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data } from "./trax";
+            let foo = "bar";
+
+            @Data class Address {
+                foo: Bar | undefined;
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            insertPos: 49,
+            values: { Data: 1 },
+        }, {
+            "kind": "data",
+            "className": "Address",
+            "classNameEnd": 128,
+            "pos": 95,
+            "decoPos": 109,
+            "log": false,
+            "members": [{
+                "kind": "property",
+                "defaultValue": undefined,
+                "end": 168,
+                "namePos": 147,
+                "name": "foo",
+                "shallowRef": false,
+                "type": {
+                    "kind": "reference",
+                    "identifier": "Bar",
+                    "canBeUndefined": true
+                }
+            }]
         }], "1");
     });
 

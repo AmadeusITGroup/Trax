@@ -9,6 +9,7 @@ export interface DataObject {
     kind: "data";
     pos: number;
     decoPos: number;                // position of the @Data decorator object
+    log: boolean;
     className: string;
     classNameEnd: number;
     members: (DataProperty | ComputedProperty)[];
@@ -44,14 +45,17 @@ export type DataType = BaseType | RefType | CollectionType;
 
 interface BaseType {
     kind: "string" | "number" | "boolean";
+    canBeUndefined?: boolean;
 }
 
 interface RefType {
     kind: "reference";
     identifier: string;        // e.g. "Foo"
+    canBeUndefined?: boolean;
 }
 
 interface CollectionType {
     kind: "array" | "map" | "dictionary";
     itemType: DataType;
+    canBeUndefined?: boolean;
 }

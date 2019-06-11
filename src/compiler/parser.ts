@@ -2,6 +2,7 @@ import { TraxImport, DataObject, DataProperty, DataType } from './types';
 import * as ts from "typescript";
 
 const DATA = "Data",
+    LOG = "log",
     REF = "ref",
     RX_IGNORE_COMMENT = /\/\/\s*trax:ignore/i,
     RX_FILE = /\@Data/;
@@ -86,18 +87,21 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
     }
 
     function processClass(node: ts.ClassDeclaration) {
-        let isData = false, decoPos = 0;
+        let isData = false, decoPos = 0, printLogs = false;
         if (node.decorators) {
             let decorators = node.decorators, idx = decorators.length, d: ts.Decorator;
             while (idx--) {
                 d = decorators[idx];
-                if (d.expression.kind === ts.SyntaxKind.Identifier && d.expression.getText() === DATA) {
-                    isData = true;
-                    decoPos = d.expression.pos - 1;
-                    // comment the dataset expression to remove it from generated code (and don't impact line numbers)
-                    // this.insert("/* ", d.expression.pos - 1);
-                    // this.insert(" */", d.expression.end);
-                    break;
+                if (d.expression.kind === ts.SyntaxKind.Identifier) {
+                    if (d.expression.getText() === DATA) {
+                        isData = true;
+                        decoPos = d.expression.pos - 1;
+                        // comment the dataset expression to remove it from generated code (and don't impact line numbers)
+                        // this.insert("/* ", d.expression.pos - 1);
+                        // this.insert(" */", d.expression.end);
+                    } else if (d.expression.getText() === LOG) {
+                        printLogs = true;
+                    }
                 }
             }
         }
@@ -113,6 +117,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
             decoPos: decoPos,
             className: node.name!.text,
             classNameEnd: node.name!.end,
+            log: printLogs,
             members: []
         }
 
@@ -155,28 +160,6 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                     }
                 });
                 obj.members.push(prop);
-
-                // if (processedPropData) {
-                //     processedProps.push(name);
-
-                //     // close comment and add new getter
-                //     this.insert([
-                //         " */ get ", name, "() ",
-                //         "{return __h.retrieve(this, ", processedPropData[0], ", \"$$", name, "\"", processedPropData[1], ")}"
-                //     ].join(''), m.end);;
-
-                // } else {
-                //     if (isSimpleType) {
-                //         simpleTypeProps.push(name);
-                //     } else if (typeName) {
-                //         dataNodeProps.push(name);
-                //     } else {
-                //         // todo
-                //         this.logError("Invalid property type", m.pos);
-                //     }
-
-                //     this.insert(getGetterAndSetter(getSeparator(m), name, typeName, canBeUndefined), m.end);
-                // }
             }
         }
 
@@ -195,7 +178,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
         return false;
     }
 
-    function getTypeObject(n: ts.Node, raiseErrorIfInvalid = false): DataType | null {
+    function getTypeObject(n: ts.Node, raiseErrorIfInvalid = false, canBeUnion = true): DataType | null {
         if (n) {
             if (n.kind === ts.SyntaxKind.StringKeyword) {
                 return { kind: "string" }
@@ -226,25 +209,30 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                         }
                     }
                 }
+            } else if (canBeUnion && n.kind === ts.SyntaxKind.UnionType) {
+                // types should be either undefined or DataNode types
+                let ut = <ts.UnionTypeNode>n, canBeUndefined = false;
+                if (ut.types) {
+                    let idx = ut.types.length, dt: DataType | null = null;
+                    while (idx--) {
+                        let tp = ut.types[idx];
+                        if (tp.kind === ts.SyntaxKind.UndefinedKeyword) {
+                            canBeUndefined = true;
+                        } else {
+                            dt = getTypeObject(tp, false, false);
+                            if (!dt) {
+                                error("Invalid value in union type", tp);
+                                return null;
+                            }
+                        }
+                    }
+                    if (dt && canBeUndefined) {
+                        dt.canBeUndefined = true;
+                        return dt;
+                    }
+                }
             }
         }
-        // else if (c.kind === ts.SyntaxKind.UnionType) {
-        //     // types should be either undefined or DataNode types
-        //     let ut = <ts.UnionTypeNode>c;
-        //     if (ut.types) {
-        //         let idx = ut.types.length;
-        //         while (idx--) {
-        //             let tp = ut.types[idx];
-        //             if (tp.kind === ts.SyntaxKind.TypeReference) {
-        //                 typeName = tp.getText();
-        //             } else if (tp.kind === ts.SyntaxKind.UndefinedKeyword) {
-        //                 canBeUndefined = true;
-        //             } else if (tp.kind !== ts.SyntaxKind.NullKeyword) {
-        //                 this.logError("Invalid property type", tp.pos);
-        //             }
-        //         }
-        //     }
-        // }
         if (raiseErrorIfInvalid && n.kind !== ts.SyntaxKind.Decorator) {
             // console.log("Unsupported type", n)
             error("Unsupported type", n);

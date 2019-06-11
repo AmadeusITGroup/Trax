@@ -9,8 +9,10 @@
     "copyright": "Amadeus s.a.s.",
     "scripts": {
         "build": "rm -rf dist/ && tsc",
-        "test": "yarn cp-tests",
-        "cp-tests": "yarn build && yarn mocha -r ts-node/register src/test/compiler/*.spec.ts --reporter dot"
+        "test": "yarn cp-tests && yarn wp-tests-no-build",
+        "cp-tests": "yarn build && yarn mocha -r ts-node/register src/test/compiler/*.spec.ts --reporter dot",
+        "wp-tests": "yarn build && yarn wp-tests-no-build",
+        "wp-tests-no-build": "webpack --config-name tests && yarn mocha dist/test.specs.js --reporter dot"
     },
     "license": "MIT",
     "bugs": {},
