@@ -12,27 +12,79 @@ interface TraxObject {
 }
 
 interface TraxMetaData {
-    parent?: TraxObject;
-    nextParents?: TraxObject[];
+    parents: FlexArray<TraxObject>;
     refreshNode?: RefreshNode;
-    refreshPriority: number;                       // number of child nodes that need to be refreshed before this node - priority 0 means that the node has to be refreshed first
-    watchers?: ((any) => void)[];                  // list of watchers associated to a DataNode instance
-    onNextChange?: ((value) => any)[] | undefined; // list of callbacks to call on next change (will be reset after that change)
+    refreshPriority: number;                     // number of child nodes that need to be refreshed before this node - priority 0 means that the node has to be refreshed first
+    watchers?: FlexArray<(v: any) => void>;      // list of watchers associated to a DataNode instance
+    ncWatchers?: FlexArray<(v: any) => any>;     // list of callbacks to call on next change (will be reset after that change)
 }
 
 function initMetaData(o: TraxObject): TraxMetaData {
     if (!o.ΔMd) {
         return o.ΔMd = {
-            parent: undefined,
-            nextParents: undefined,
+            parents: undefined,
             refreshNode: undefined,
             refreshPriority: 0,
             watchers: undefined,
-            onNextChange: undefined
+            ncWatchers: undefined
         }
     }
     return o.ΔMd;
 }
+// -----------------------------------------------------------------------------------------------------------------------------
+// Soft Array functions
+
+// The purpose of FlexArray is to avoid the creation of an Array in cases where we don't need it (here in 95% of cases)
+type FlexArray<T> = T | T[] | undefined;
+
+let $isArray = Array.isArray;
+
+function FA_forEach<T>(a: FlexArray<T>, fn: (item: T) => void) {
+    if (a) {
+        if ($isArray(a)) {
+            (a as Array<T>).forEach(fn);
+        } else {
+            fn(a);
+        }
+    }
+}
+
+function FA_removeItem<T>(a: FlexArray<T>, item: T | undefined): FlexArray<T> {
+    if (a && item) {
+        if (a === item) {
+            return undefined;
+        } else if ($isArray(a)) {
+            let arr = a as Array<T>;
+            if (arr.length === 1) {
+                if (arr[0] === item) return undefined
+            } else {
+                let idx = arr.indexOf(item);
+                if (idx > -1) {
+                    arr.splice(idx, 1);
+                    if (arr.length === 1) return arr[0];
+                    return arr;
+                }
+            }
+        }
+    }
+    return a;
+}
+
+function FA_addItem<T>(a: FlexArray<T>, item: T): FlexArray<T> {
+    if (!a) {
+        return item;
+    } else {
+        if ($isArray(a)) {
+            (a as Array<T>).push(item);
+            return a
+        } else {
+            return [a, item];
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// trax public apis
 
 /** 
  * Data object decorator
@@ -54,9 +106,6 @@ export function ref(proto, key: string) {
 export function computed(proto, propName: string, descriptor: PropertyDescriptor) {
 
 }
-
-// -----------------------------------------------------------------------------------------------------------------------------
-// trax public apis
 
 export function version(o: any /*DataObject*/): number {
     return 0; // TODO
@@ -92,12 +141,7 @@ export async function changeComplete<T>(o: T): Promise<T> {
     let md = d[MP_META_DATA] as TraxMetaData | undefined;
     if (md) {
         return new Promise(function (resolve, reject) {
-            let onNextChange = md!.onNextChange;
-            if (!onNextChange) {
-                md!.onNextChange = [resolve];
-            } else {
-                onNextChange.push(resolve);
-            }
+            md!.ncWatchers = FA_addItem(md!.ncWatchers, resolve);
         }) as any;
     }
     return d;
@@ -348,13 +392,10 @@ function $touch(o: TraxObject, selfChange: boolean = false) {
     if (firstTimeTouch) {
         // recursively touch on parent nodes
         let md = o.ΔMd;
-        if (md && md.parent) {
-            $touch(md.parent, false);
-            if (md.nextParents) {
-                for (let p of md.nextParents) {
-                    $touch(p, false);
-                }
-            }
+        if (md && md.parents) {
+            FA_forEach(md.parents, function (p) {
+                $touch(p, false);
+            });
         }
     }
 }
@@ -383,34 +424,8 @@ function disconnectChildFromParent(parent: TraxObject, child: TraxObject | null)
     if (child) {
         // if child is immutable, it last version still holds the reference to the current parent
         let md = child.ΔMd;
-        if (md && md.parent) {
-            let foundInParent1 = false;
-            if (md.parent === parent) {
-                md.parent = undefined;
-                foundInParent1 = true;
-            }
-
-            let np = md.nextParents;
-            if (np) {
-                if (!foundInParent1) {
-                    let idx = np.indexOf(parent);
-                    if (idx > -1) {
-                        if (np.length === 1) {
-                            np = md.nextParents = undefined;
-                        } else {
-                            np.splice(idx, 1);
-                        }
-                    }
-                }
-                if (!md.parent && np && np.length) {
-                    if (np.length === 1) {
-                        md.parent = np[0];
-                        md.nextParents = undefined;
-                    } else {
-                        md.parent = np.shift();
-                    }
-                }
-            }
+        if (md && md.parents) {
+            md.parents = FA_removeItem(md.parents, parent);
 
             if (isBeingChanged(child)) {
                 refreshContext.decreaseRefreshPriority(parent);
@@ -428,13 +443,8 @@ function disconnectChildFromParent(parent: TraxObject, child: TraxObject | null)
 function connectChildToParent(parent: TraxObject, child: TraxObject | null) {
     if (child) {
         let md = initMetaData(child);
-        if (!md.parent) {
-            md.parent = parent;
-        } else if (md.nextParents) {
-            md.nextParents.push(parent);
-        } else {
-            md.nextParents = [parent];
-        }
+        md.parents = FA_addItem(md.parents, parent);
+
         if (isBeingChanged(child)) {
             // parent will be refreshed after the child
             refreshContext.increaseRefreshPriority(parent);
@@ -464,7 +474,7 @@ class RefreshNode {
  */
 interface DnWatcher {
     dataNode: TraxObject;
-    cbList: ((DataNode) => void)[];
+    watchers: FlexArray<(o: TraxObject) => void>;
 }
 
 /**
@@ -627,8 +637,11 @@ class RefreshContext {
                 o = next.dataNode!;
                 processNode(o, instanceWatchers, tempWatchers);
                 md = o.ΔMd!;
-                ctxt.decreaseRefreshPriority(md.parent)
-                ctxt.decreaseRefreshPriorityOnList(md.nextParents);
+                // ctxt.decreaseRefreshPriority(md.parent)
+                // ctxt.decreaseRefreshPriorityOnList(md.nextParents);
+                FA_forEach(md.parents, function (p) {
+                    ctxt.decreaseRefreshPriority(p)
+                })
                 nextNext = next.next;
                 ctxt.release(next);
                 if (nextNext) {
@@ -669,25 +682,23 @@ class RefreshContext {
 
 function processNode(o: TraxObject, instanceWatchers: DnWatcher[], tempWatchers: DnWatcher[]) {
     // add a new version at the end of the $next linked list
-    let md = o.ΔMd!, cbList = md.onNextChange;
-    md.onNextChange = undefined; // remove current callbacks
+    let md = o.ΔMd!, ncWatchers = md.ncWatchers;
+    md.ncWatchers = undefined; // remove current callbacks
     if (md.watchers) {
         // instanceWatchers = watchers callbacks (for all instances)
-        instanceWatchers.push({ dataNode: o, cbList: md.watchers });
+        instanceWatchers.push({ dataNode: o, watchers: md.watchers });
     }
-    if (cbList) {
-        // tempWatchers = onFreeze callbacks (used by changeComplete() - only 1 time)
-        tempWatchers.push({ dataNode: o, cbList: cbList });
+    if (ncWatchers) {
+        // tempWatchers = callbacks used by changeComplete() - only 1 time
+        tempWatchers.push({ dataNode: o, watchers: ncWatchers });
     }
 }
 
 function callWatchers(watchers: DnWatcher[]) {
-    let cbList;
     for (let w of watchers) {
-        cbList = w.cbList;
-        for (let cb of cbList) {
+        FA_forEach(w.watchers, function (cb) {
             cb(w.dataNode);
-        }
+        })
     }
 }
 

@@ -85,11 +85,11 @@ describe('Data objects', () => {
         assert.equal(node1.value, "node13", "node14 value");
         assert.equal(node1.node ? node1.node.value : "x", "node2x", "node14.node value");
 
-        assert.equal(node2[MP_META_DATA].parent, node1, "node1 is node2 parent");
+        assert.equal(node2[MP_META_DATA].parents, node1, "node1 is node2 parent");
         let node3 = new TestNode();
         node1.node = node3;
-        assert.equal(node2[MP_META_DATA].parent, undefined, "node2 parent is undefined");
-        assert.equal(node3[MP_META_DATA].parent, node1, "node1 is now node3 parent");
+        assert.equal(node2[MP_META_DATA].parents, undefined, "node2 parent is undefined");
+        assert.equal(node3[MP_META_DATA].parents, node1, "node1 is now node3 parent");
     });
 
     it('should correctly set value back after 2 consecutive changes', async function () {
@@ -121,11 +121,11 @@ describe('Data objects', () => {
 
         assert.equal(isBeingChanged(node1), false, "node1 is back to unchanged");
         assert.equal(node1.node2, node2, "node2 is set");
-        assert.equal(node2[MP_META_DATA].parent, node1, "node2.parent is node1");
+        assert.equal(node2[MP_META_DATA].parents, node1, "node2.parent is node1");
         node1.node2 = null;
         assert.equal(isBeingChanged(node1), true, "node1 changed again");
         assert.equal(node1.node2, null, "node1.node2 is null");
-        assert.equal(node2[MP_META_DATA].parent, undefined, "node2.parent is undefined");
+        assert.equal(node2[MP_META_DATA].parents, undefined, "node2.parent is undefined");
 
         await changeComplete(node1);
         assert.equal(isBeingChanged(node1), false, "node1 is back to unchanged (2)");
@@ -158,19 +158,17 @@ describe('Data objects', () => {
 
         let node3 = new TestNode();
         node3.node = node2;
-        assert.equal(node2[MP_META_DATA].parent, node1, "node1 is node2 parent");
-        assert.deepEqual(node2[MP_META_DATA].nextParents, [node3], "node3 is in nextParents");
+        assert.deepEqual(node2[MP_META_DATA].parents, [node1, node3], "node1 + node3 parent");
         assert.equal(isBeingChanged(node3), true, "node3 is changed");
 
         await changeComplete(node3);
         node1.node = new TestNode();
-        assert.equal(node2[MP_META_DATA].parent, node3, "node3 is node2 parent");
-        assert.deepEqual(node2[MP_META_DATA].nextParents, undefined, "node2.nextParents is undefined");
+        assert.equal(node2[MP_META_DATA].parents, node3, "node3 is node2 parent");
         assert.equal(isBeingChanged(node1), true, "node1 is changed");
         assert.equal(isBeingChanged(node3), false, "node3 is unchanged");
 
         node3.node = new TestNode();
-        assert.equal(node2[MP_META_DATA].parent, undefined, "node2 parent is now undefined");
+        assert.equal(node2[MP_META_DATA].parents, undefined, "node2 parent is now undefined");
         assert.deepEqual(node2[MP_META_DATA].nextParents, undefined, "node2.nextParents is still undefined");
         assert.equal(isBeingChanged(node3), true, "node3 is now changed");
     });
@@ -181,40 +179,31 @@ describe('Data objects', () => {
         node2.node2 = child;
         node3.node2 = child;
 
-        assert.equal(child[MP_META_DATA].parent, node1, "node1 is first parent");
-        assert.deepEqual(child[MP_META_DATA].nextParents, [node2, node3], "next parents");
-
+        assert.deepEqual(child[MP_META_DATA].parents, [node1, node2, node3], "parent: [node1, node2, node3]");
         node1.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, node2, "node2 is first parent");
-        assert.deepEqual(child[MP_META_DATA].nextParents, [node3], "next parents (2)");
+        assert.deepEqual(child[MP_META_DATA].parents, [node2, node3], "node2 is first parent");
 
         node2.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, node3, "node3 is first parent");
-        assert.deepEqual(child[MP_META_DATA].nextParents, undefined, "next parents (3)");
+        assert.equal(child[MP_META_DATA].parents, node3, "node3 is first parent");
 
         node3.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, undefined, "parent is undefined");
-        assert.deepEqual(child[MP_META_DATA].nextParents, undefined, "next parents (4)");
+        assert.equal(child[MP_META_DATA].parents, undefined, "parent is undefined");
 
         // back to first state
         node1.node2 = child;
         node2.node2 = child;
         node3.node2 = child;
 
-        assert.equal(child[MP_META_DATA].parent, node1, "node1 is first parent (5)");
-        assert.deepEqual(child[MP_META_DATA].nextParents, [node2, node3], "next parents (5)");
+        assert.deepEqual(child[MP_META_DATA].parents, [node1, node2, node3], "node1 is first parent (2)");
 
         node2.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, node1, "node1 is first parent (6)");
-        assert.deepEqual(child[MP_META_DATA].nextParents, [node3], "next parents (6)");
+        assert.deepEqual(child[MP_META_DATA].parents, [node1, node3], "node1 + node3 (2)");
 
         node3.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, node1, "node1 is first parent (7)");
-        assert.deepEqual(child[MP_META_DATA].nextParents, undefined, "next parents (7)");
+        assert.equal(child[MP_META_DATA].parents, node1, "node1 is only parent (2)");
 
         node1.node2 = null;
-        assert.equal(child[MP_META_DATA].parent, undefined, "first parent is undefined (8)");
-        assert.deepEqual(child[MP_META_DATA].nextParents, undefined, "next parents (8)");
+        assert.equal(child[MP_META_DATA].parents, undefined, "first parent is undefined (2)");
     });
 
     it('should properly update child refs: sth->sthV2', async function () {
@@ -246,23 +235,19 @@ describe('Data objects', () => {
         node2.value = "v2";
         node1.node2 = node2;
 
-        assert.equal(node2[MP_META_DATA].parent, node1, "first parent is node1");
-        assert.deepEqual(node2[MP_META_DATA].nextParents, [node1], "node1 in next parents (2 references)");
+        assert.deepEqual(node2[MP_META_DATA].parents, [node1, node1], "parent:[node1,node1]");
 
         await changeComplete(node1);
         assert.equal(node1.node!.value, "v2", "node value updated");
         assert.equal(node1.node2!.value, "v2", "node2 value updated");
-        assert.equal(node1.node2![MP_META_DATA].parent, node1, "first parent is node1 (2)");
-        assert.deepEqual(node1.node2![MP_META_DATA].nextParents, [node1], "node1 in next parents (2 references) (2)");
+        assert.deepEqual(node1.node2![MP_META_DATA].parents, [node1, node1], "parent:[node1,node1] (2)");
         assert.equal(node1.node, node1.node2, "child nodes are identical");
 
         node1.node2 = null;
-        assert.equal(node2![MP_META_DATA].parent, node1, "first parent is node1 (3)");
-        assert.deepEqual(node2![MP_META_DATA].nextParents, undefined, "next parents is empty (3)");
+        assert.equal(node2![MP_META_DATA].parents, node1, "node1 is only parent");
 
         node1.node = new TestNode();
-        assert.equal(node2![MP_META_DATA].parent, undefined, "first parent is empty (4)");
-        assert.deepEqual(node2![MP_META_DATA].nextParents, undefined, "next parents is empty (4)");
+        assert.equal(node2![MP_META_DATA].parents, undefined, "parent is empty");
     });
 
     it("should support inheritance", async function () {
