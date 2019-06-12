@@ -423,14 +423,14 @@ describe('Parser', () => {
         }], "1");
     });
 
-    it("should support union types with undefined", async function () {
+    it("should support union types with null", async function () {
         let r = parse(`\
             // sample 1
             import { Data } from "./trax";
             let foo = "bar";
 
             @Data class Address {
-                foo: Bar | undefined;
+                foo: Bar | null;
             }
         `, "file1.ts");
 
@@ -448,14 +448,14 @@ describe('Parser', () => {
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
-                "end": 168,
+                "end": 163,
                 "namePos": 147,
                 "name": "foo",
                 "shallowRef": false,
                 "type": {
                     "kind": "reference",
                     "identifier": "Bar",
-                    "canBeUndefined": true
+                    "canBeNull": true
                 }
             }]
         }], "1");

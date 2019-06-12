@@ -24,20 +24,20 @@ describe('Generator', () => {
         `, "1");
     });
 
-    it("should support types that can be undefined", async function () {
+    it("should support types that can be null", async function () {
         assert.equal(generate(`
             import { Data } from "./trax";
 
             @Data class Address {
-                street: string | undefined
-                valid: boolean  | undefined;
+                street: string | null
+                valid: boolean  | null;
             }
         `, 'myFile.ts'), `
             import { ΔD, ΔfStr, Δp, ΔfBool } from "./trax";
 
             @ΔD class Address {
-                ΔΔstreet: string | undefined; @Δp(ΔfStr, 1) street: string | undefined;
-                ΔΔvalid: boolean  | undefined; @Δp(ΔfBool, 1) valid: boolean | undefined;
+                ΔΔstreet: string | null; @Δp(ΔfStr, 1) street: string | null;
+                ΔΔvalid: boolean  | null; @Δp(ΔfBool, 1) valid: boolean | null;
             }
         `, "1");
     });

@@ -211,13 +211,13 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                 }
             } else if (canBeUnion && n.kind === ts.SyntaxKind.UnionType) {
                 // types should be either undefined or DataNode types
-                let ut = <ts.UnionTypeNode>n, canBeUndefined = false;
+                let ut = <ts.UnionTypeNode>n, canBeNull = false;
                 if (ut.types) {
                     let idx = ut.types.length, dt: DataType | null = null;
                     while (idx--) {
                         let tp = ut.types[idx];
-                        if (tp.kind === ts.SyntaxKind.UndefinedKeyword) {
-                            canBeUndefined = true;
+                        if (tp.kind === ts.SyntaxKind.NullKeyword) {
+                            canBeNull = true;
                         } else {
                             dt = getTypeObject(tp, false, false);
                             if (!dt) {
@@ -226,8 +226,8 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                             }
                         }
                     }
-                    if (dt && canBeUndefined) {
-                        dt.canBeUndefined = true;
+                    if (dt && canBeNull) {
+                        dt.canBeNull = true;
                         return dt;
                     }
                 }

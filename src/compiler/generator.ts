@@ -6,24 +6,30 @@ const DATA = "Data", DATA_DECO = "@" + DATA, RX_LOG = /\/\/\s*trax\:log/;
 export function generate(src: string, filePath: string): string {
     let output = src,
         outputShift = 0,
-        ast = parse(src, filePath),
+        ast: null | (TraxImport | DataObject)[],
         traxImport: TraxImport,
         importList: string[] = [], // list of new imports
         importDict: { [key: string]: 1 };
 
-    if (ast && ast.length) {
-        initImports(ast);
+    try {
+        ast = parse(src, filePath);
+        if (ast && ast.length) {
+            initImports(ast);
 
-        let len = ast.length;
-        for (let i = 1; len > i; i++) {
-            if (ast[i].kind === "import") {
-                error("Duplicate Data import", ast[i]);
-            } else {
-                processDataObject(ast[i] as DataObject);
+            let len = ast.length;
+            for (let i = 1; len > i; i++) {
+                if (ast[i].kind === "import") {
+                    error("Duplicate Data import", ast[i]);
+                } else {
+                    processDataObject(ast[i] as DataObject);
+                }
             }
+            updateImports();
         }
-        updateImports();
+    } catch (ex) {
+        error(ex);
     }
+
     if (src.match(RX_LOG)) {
         console.log("-----------------------------------------------------------------------------");
         console.log("Trax Ouput:");
@@ -32,9 +38,9 @@ export function generate(src: string, filePath: string): string {
 
     return output;
 
-    function error(msg: string, node: DataObject | TraxImport | null) {
+    function error(msg: string, node: DataObject | TraxImport | null = null) {
         // todo
-        throw new Error("Trax: " + msg)
+        throw new Error("[TRAX]" + msg + " - file: " + filePath);
     }
 
     function initImports(ast: (TraxImport | DataObject)[]) {
@@ -100,8 +106,8 @@ export function generate(src: string, filePath: string): string {
             typeRef: string,
             factory: string,
             separator: string,
-            undefinedArg1: string,
-            undefinedArg2: string;
+            nullArg1: string,
+            nullArg2: string;
         for (let i = 0; len > i; i++) {
             factory = "";
             typeRef = "";
@@ -135,11 +141,11 @@ export function generate(src: string, filePath: string): string {
                         error("Generator doesn't support type " + tp.kind + " yet", n);
                     }
 
-                    if (tp.canBeUndefined) {
-                        undefinedArg1 = ", 1";
-                        undefinedArg2 = " | undefined";
+                    if (tp.canBeNull) {
+                        nullArg1 = ", 1";
+                        nullArg2 = " | null";
                     } else {
-                        undefinedArg1 = undefinedArg2 = "";
+                        nullArg1 = nullArg2 = "";
                     }
 
                     if (factory) {
@@ -148,7 +154,7 @@ export function generate(src: string, filePath: string): string {
                         // add new property definition
                         // e.g. @Δp(ΔfStr) street: string;
                         addImport("Δp");
-                        insert(`${separator} @Δp(${factory}${undefinedArg1}) ${prop.name}: ${typeRef}${undefinedArg2};`, prop.end);
+                        insert(`${separator} @Δp(${factory}${nullArg1}) ${prop.name}: ${typeRef}${nullArg2};`, prop.end);
                     }
 
                 } else {

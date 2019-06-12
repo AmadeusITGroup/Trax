@@ -45,17 +45,17 @@ export type DataType = BaseType | RefType | CollectionType;
 
 interface BaseType {
     kind: "string" | "number" | "boolean";
-    canBeUndefined?: boolean;
+    canBeNull?: boolean;
 }
 
 interface RefType {
     kind: "reference";
     identifier: string;        // e.g. "Foo"
-    canBeUndefined?: boolean;
+    canBeNull?: boolean;
 }
 
 interface CollectionType {
     kind: "array" | "map" | "dictionary";
     itemType: DataType;
-    canBeUndefined?: boolean;
+    canBeNull?: boolean;
 }
