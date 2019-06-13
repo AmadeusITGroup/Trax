@@ -1,30 +1,45 @@
 import { TestNode } from './fixture';
 import * as assert from 'assert';
-import { changeComplete } from '../../trax';
+import { changeComplete, watch, unwatch } from '../../trax';
 
 describe('Watchers', () => {
 
-    // it('should support watch and unwatch', async function () {
-    //     let node = new TestNode(), watcherCalls = 0;
-    //     node.value = "v2";
+    it('should support watch and unwatch', async function () {
+        let node = new TestNode(), watcherCalls1 = 0, watcherCalls2 = 0;
+        node.value = "v2";
 
-    //     let watchRef = watch(node, () => {
-    //         watcherCalls++;
-    //     });
+        // 1st watcher
+        let watchRef = watch(node, () => {
+            watcherCalls1++;
+        });
 
-    //     await changeComplete(node);
-    //     assert.equal(watcherCalls, 1, "1 watcher call");
-    //     add 2nd watcher
-    //     node.value = "ABC";
-    //     await changeComplete(node);
-    //     assert.equal(watcherCalls, 2, "2 watcher calls");
+        await changeComplete();
+        assert.equal(watcherCalls1, 1, "1 watcher1 call");
 
-    //     unwatch(node, watchRef);
+        // 2nd watcher
+        let watchRef2 = watch(node, () => {
+            watcherCalls2++;
+        });
 
-    //     node.value = "ABC2";
-    //     await changeComplete(node);
-    //     assert.equal(watcherCalls, 2, "still 2 watcher calls");
-    // });
+        node.value = "ABC";
+        await changeComplete();
+        assert.equal(watcherCalls1, 2, "2 watcher1 calls");
+        assert.equal(watcherCalls2, 1, "1 watcher2 calls");
+
+        unwatch(node, watchRef);
+
+        node.value = "ABC2";
+        await changeComplete();
+        assert.equal(watcherCalls1, 2, "still 2 watcher1 calls");
+        assert.equal(watcherCalls2, 2, "2 watcher2 calls");
+
+        unwatch(node, watchRef2);
+
+        node.value = "ABC3";
+        await changeComplete();
+        assert.equal(watcherCalls1, 2, "2 watcher1 calls (2)");
+        assert.equal(watcherCalls2, 2, "2 watcher2 calls (2)");
+    });
 
     // it('should support watch and unwatch', async function () {
     //     let node = initNewArrTestNode(), watcherCalls = 0;

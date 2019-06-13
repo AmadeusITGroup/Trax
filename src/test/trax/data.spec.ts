@@ -20,16 +20,13 @@ describe('Data objects', () => {
         assert.equal(isBeingChanged(nd), false, "no mutation on original state");
         nd.value = "v2";
         assert.equal(isBeingChanged(nd), true, "mutation starts after first change");
-        let nd2 = await changeComplete(nd);
+        await changeComplete();
         assert.equal(isBeingChanged(nd), false, "no mutation on frozen object");
-        assert.equal(isBeingChanged(nd2), false, "no mutation after mutation complete");
-        assert.equal(nd, nd2, "nd and nd2 are equal");
-        assert.equal(nd2.value, "v2", "new version holds new value");
-        nd2.value = "v3";
-        let nd3 = await changeComplete(nd2);
-        assert.equal(isBeingChanged(nd2), false, "no mutation on frozen object 2");
-        assert.equal(isBeingChanged(nd3), false, "no mutation after mutation complete 2");
-        assert.equal(nd3.value, "v3", "new version holds new value");
+        assert.equal(nd.value, "v2", "new version holds new value");
+        nd.value = "v3";
+        await changeComplete();
+        assert.equal(isBeingChanged(nd), false, "no mutation on frozen object 2");
+        assert.equal(nd.value, "v3", "new version holds new value");
     });
 
     it("should tell if an object is a dataset", function () {
@@ -47,9 +44,8 @@ describe('Data objects', () => {
 
     it('should support changeComplete on unchanged objects', async function () {
         let nd = new TestNode();
-        let nd2 = await changeComplete(nd);
+        await changeComplete();
         assert.equal(isBeingChanged(nd), false, "no mutation after mutation complete");
-        assert.equal(nd, nd2, "no new version created");
     });
 
     it('should support child data nodes', async function () {
@@ -63,7 +59,7 @@ describe('Data objects', () => {
         assert.equal(isBeingChanged(node1), true, "not pristine 1");
         assert.equal(node1["ΔΔnode"], node2, "node2 in private property");
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(isBeingChanged(node1), false, "pristine 2");
         assert.equal(node1.node, node2, "new node value");
 
@@ -72,7 +68,7 @@ describe('Data objects', () => {
         assert.equal(isBeingChanged(node2), true, "node2 touched");
         assert.equal(isBeingChanged(node1), true, "node1 touched");
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(node1.node, node2, "node1.node is still node2");
         assert.equal(node1.node ? node1.node.value : "x", "abc", "sub node ok");
 
@@ -80,7 +76,7 @@ describe('Data objects', () => {
         node1.value = "node13";
         node1.node.value = "node2x";
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(isBeingChanged(node1), false, "node13 is pristine");
         assert.equal(node1.value, "node13", "node14 value");
         assert.equal(node1.node ? node1.node.value : "x", "node2x", "node14.node value");
@@ -101,7 +97,7 @@ describe('Data objects', () => {
         node1.value = "def";
         assert.equal(node1.value, "def", "def value");
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(isBeingChanged(node1), false, "node11 is pristine");
         assert.equal(node1.value, "def", "node11 value is still def");
     });
@@ -117,7 +113,7 @@ describe('Data objects', () => {
 
         let node2 = new TestNode();
         node1.node2 = node2;
-        await changeComplete(node1);
+        await changeComplete();
 
         assert.equal(isBeingChanged(node1), false, "node1 is back to unchanged");
         assert.equal(node1.node2, node2, "node2 is set");
@@ -127,7 +123,7 @@ describe('Data objects', () => {
         assert.equal(node1.node2, null, "node1.node2 is null");
         assert.equal(node2[MP_META_DATA].parents, undefined, "node2.parent is undefined");
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(isBeingChanged(node1), false, "node1 is back to unchanged (2)");
     });
 
@@ -136,18 +132,19 @@ describe('Data objects', () => {
         let node1 = new TestNode(), node2 = new TestNode();
         node2.value = "v2";
         node1.node2 = node2;
-        let node11 = await changeComplete(node1), node21 = node11.node2;
-        assert.equal(node11, node1, "changeComplete returns its argument");
+        await changeComplete();
+        let node12 = node1.node2;
+        assert.equal(node1, node1, "changeComplete returns its argument");
 
-        assert.equal(isBeingChanged(node11), false, "node11 is pristine");
-        node11.node2 = node21;
-        assert.equal(isBeingChanged(node11), false, "node11 is still pristine");
-        node11.node2 = null;
-        assert.equal(isBeingChanged(node11), true, "node11 has changed");
-        node11.node2 = node21;
+        assert.equal(isBeingChanged(node1), false, "node11 is pristine");
+        node1.node2 = node12;
+        assert.equal(isBeingChanged(node1), false, "node11 is still pristine");
+        node1.node2 = null;
+        assert.equal(isBeingChanged(node1), true, "node11 has changed");
+        node1.node2 = node12;
 
-        await changeComplete(node11);
-        assert.equal(node11.node2, node21, "node12 sub node hasn't changed");
+        await changeComplete();
+        assert.equal(node1.node2, node12, "node12 sub node hasn't changed");
     });
 
     it('should properly support multiple parents (2 parents)', async function () {
@@ -161,7 +158,7 @@ describe('Data objects', () => {
         assert.deepEqual(node2[MP_META_DATA].parents, [node1, node3], "node1 + node3 parent");
         assert.equal(isBeingChanged(node3), true, "node3 is changed");
 
-        await changeComplete(node3);
+        await changeComplete();
         node1.node = new TestNode();
         assert.equal(node2[MP_META_DATA].parents, node3, "node3 is node2 parent");
         assert.equal(isBeingChanged(node1), true, "node1 is changed");
@@ -212,11 +209,11 @@ describe('Data objects', () => {
         node1.node2 = node2;
         node2.value = "v2";
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(node1.node2!.value, "v2", "new v2 value");
 
         node1.node2!.value = "v21";
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(node1.node2!.value, "v21", "v21");
 
         // change, set to null and set back
@@ -225,7 +222,7 @@ describe('Data objects', () => {
         node1.node2 = null;
         node1.node2 = n;
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(node1.node2!.value, "v22", "v22");
     });
 
@@ -237,7 +234,7 @@ describe('Data objects', () => {
 
         assert.deepEqual(node2[MP_META_DATA].parents, [node1, node1], "parent:[node1,node1]");
 
-        await changeComplete(node1);
+        await changeComplete();
         assert.equal(node1.node!.value, "v2", "node value updated");
         assert.equal(node1.node2!.value, "v2", "node2 value updated");
         assert.deepEqual(node1.node2![MP_META_DATA].parents, [node1, node1], "parent:[node1,node1] (2)");
@@ -263,7 +260,7 @@ describe('Data objects', () => {
         assert.equal(isBeingChanged(nd), true, "nd changed");
         nd.quantity = 123;
 
-        await changeComplete(nd);
+        await changeComplete();
         assert.equal(nd.quantity, 123, "quantity is now 123");
         assert.equal(nd.node!.value, "v2", "nd.node has properly mutated");
     });

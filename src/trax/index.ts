@@ -14,17 +14,16 @@ interface TraxObject {
 interface TraxMetaData {
     parents: FlexArray<TraxObject>;
     refreshCtxt?: RefreshContext;
-    watchers?: FlexArray<(v: any) => void>;      // list of watchers associated to a DataNode instance
-    ccWatchers?: FlexArray<(v: any) => any>;     // list of callbacks to call on changeComplete (will be reset after that change)
+    watchers?: FlexArray<WatchFunction>;      // list of watchers associated to a DataNode instance
 }
 
-function initMetaData(o: TraxObject): TraxMetaData {
+function initMetaData(o: TraxObject): TraxMetaData | null {
+    if (!o.ΔTrackable) return null;
     if (!o.ΔMd) {
         return o.ΔMd = {
             parents: undefined,
             refreshCtxt: undefined,
-            watchers: undefined,
-            ccWatchers: undefined
+            watchers: undefined
         }
     }
     return o.ΔMd;
@@ -127,19 +126,43 @@ export function isBeingChanged(o: any /*TraxObject*/): boolean {
 }
 
 /**
- * Return a promise that will be resolved when all mutations are processed and the object is immutable
- * The function will return the new version of the data object (previous version will still be available with its original values)
- * @param d {HObject} the data object to process
+ * Return a promise that will be resolved when the current context has refreshed
  */
-export async function changeComplete<T>(o: T): Promise<T> {
-    // this function returns when the dataset is processed (and becomes immutable)
-    let d = o as any;
-
-    let md = initMetaData(d);
-    return new Promise(function (resolve, reject) {
-        md!.ccWatchers = FA_addItem(md!.ccWatchers, resolve);
-        refreshContext.checkObject(d);
+export async function changeComplete() {
+    return new Promise(function (resolve) {
+        refreshContext.addWatcher(resolve);
     }) as any;
+}
+
+type WatchFunction = (o: TraxObject) => void;
+
+/**
+ * Watch all changes associated to a data node instance
+ * @param o  the data node to watch
+ * @param fn the function to call when the data node changes (the new data node version will be passed as argument)
+ * @return the watch function that can be used as identifier to un-watch the object (cf. unwatch)
+ */
+export function watch(o: any, fn: WatchFunction): WatchFunction {
+    let md = initMetaData(o);
+    if (md) {
+        md.watchers = FA_addItem(md.watchers, fn);
+        if (isBeingChanged(o)) {
+            refreshContext.checkObject(o);
+        }
+    }
+    return fn;
+}
+
+/**
+ * Stop watching a data node
+ * @param d the targeted data node
+ * @param watchFn the watch function that should not be called any longer (returned by watch(...))
+ */
+export function unwatch(o: any, watchFn: WatchFunction) {
+    let md = initMetaData(o);
+    if (md) {
+        md.watchers = FA_removeItem(md.watchers, watchFn);
+    }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -430,7 +453,9 @@ function disconnectChildFromParent(parent: TraxObject, child: TraxObject | null)
 function connectChildToParent(parent: TraxObject, child: TraxObject | null) {
     if (child) {
         let md = initMetaData(child);
-        md.parents = FA_addItem(md.parents, parent);
+        if (md) {
+            md.parents = FA_addItem(md.parents, parent);
+        }
     }
 }
 
@@ -450,9 +475,16 @@ interface DnWatcher {
  */
 class RefreshContext {
     objects: TraxObject[] = [];
+    refreshWatchers: FlexArray<() => void> = undefined;
+    mtTriggered = false; // true when the refresh micro task has been triggered
 
     constructor() {
         TRAX_COUNTER++;
+    }
+
+    addWatcher(fn: () => void) {
+        this.refreshWatchers = FA_addItem(this.refreshWatchers, fn);
+        this.triggerRefreshTask();
     }
 
     /**
@@ -462,13 +494,17 @@ class RefreshContext {
      */
     checkObject(o: TraxObject) {
         let md = o.ΔMd;
-        if (md && (md.watchers || md.ccWatchers) && !md.refreshCtxt) {
-            let isFirst = this.objects.length === 0;
+        if (md && md.watchers && !md.refreshCtxt) {
             this.objects.push(o);
             md.refreshCtxt = this;
-            if (isFirst) {
-                Promise.resolve().then(() => { this.refresh() });
-            }
+            this.triggerRefreshTask();
+        }
+    }
+
+    triggerRefreshTask() {
+        if (!this.mtTriggered) {
+            Promise.resolve().then(() => { this.refresh() });
+            this.mtTriggered = true;
         }
     }
 
@@ -478,15 +514,14 @@ class RefreshContext {
      */
     refresh(syncWatchers = true) {
         let objects = this.objects, len = objects.length;
-        if (!len) return;
+        if (!len && !this.refreshWatchers) return;
 
         // create a new refresh context (may be filled while we are executing watcher callbacks on current context)
         refreshContext = new RefreshContext();
 
         let o: TraxObject,
             md: TraxMetaData,
-            instanceWatchers: DnWatcher[] = [],
-            tempWatchers: DnWatcher[] = [];
+            instanceWatchers: DnWatcher[] = [];
 
         for (let i = 0; len > i; i++) {
             o = objects[i]
@@ -495,28 +530,27 @@ class RefreshContext {
                 // instanceWatchers = watchers callbacks (for all instances)
                 instanceWatchers.push({ dataNode: o, watchers: md.watchers });
             }
-            if (md.ccWatchers) {
-                // tempWatchers = callbacks used by changeComplete() - only 1 time
-                tempWatchers.push({ dataNode: o, watchers: md.ccWatchers });
-            }
-            md.ccWatchers = undefined; // remove current changeComplete callbacks
             md.refreshCtxt = undefined;
         }
 
-        let nbrOfCallbacks = instanceWatchers.length + tempWatchers.length;
+        let nbrOfCallbacks = instanceWatchers.length;
         if (nbrOfCallbacks) {
             if (syncWatchers) {
                 // notify all instance watchers (generated through calls to watch(...))
                 callWatchers(instanceWatchers);
-                // notify all temporary watchers (generated through calls to processingDone(...))
-                callWatchers(tempWatchers);
             } else {
                 // run watches in a micro task
                 Promise.resolve().then(() => {
                     callWatchers(instanceWatchers);
-                    callWatchers(tempWatchers);
                 });
             }
+        }
+        if (this.refreshWatchers) {
+            // notify all temporary watchers (generated through calls to changeComplete())
+            FA_forEach(this.refreshWatchers, function (cb) {
+                cb();
+            });
+            this.refreshWatchers = undefined;
         }
     }
 }
