@@ -13,20 +13,18 @@ interface TraxObject {
 
 interface TraxMetaData {
     parents: FlexArray<TraxObject>;
-    refreshNode?: RefreshNode;
-    refreshPriority: number;                     // number of child nodes that need to be refreshed before this node - priority 0 means that the node has to be refreshed first
+    refreshCtxt?: RefreshContext;
     watchers?: FlexArray<(v: any) => void>;      // list of watchers associated to a DataNode instance
-    ncWatchers?: FlexArray<(v: any) => any>;     // list of callbacks to call on next change (will be reset after that change)
+    ccWatchers?: FlexArray<(v: any) => any>;     // list of callbacks to call on changeComplete (will be reset after that change)
 }
 
 function initMetaData(o: TraxObject): TraxMetaData {
     if (!o.ΔMd) {
         return o.ΔMd = {
             parents: undefined,
-            refreshNode: undefined,
-            refreshPriority: 0,
+            refreshCtxt: undefined,
             watchers: undefined,
-            ncWatchers: undefined
+            ccWatchers: undefined
         }
     }
     return o.ΔMd;
@@ -37,7 +35,7 @@ function initMetaData(o: TraxObject): TraxMetaData {
 // The purpose of FlexArray is to avoid the creation of an Array in cases where we don't need it (here in 95% of cases)
 type FlexArray<T> = T | T[] | undefined;
 
-let $isArray = Array.isArray;
+const $isArray = Array.isArray;
 
 function FA_forEach<T>(a: FlexArray<T>, fn: (item: T) => void) {
     if (a) {
@@ -136,15 +134,12 @@ export function isBeingChanged(o: any /*TraxObject*/): boolean {
 export async function changeComplete<T>(o: T): Promise<T> {
     // this function returns when the dataset is processed (and becomes immutable)
     let d = o as any;
-    if (!isBeingChanged(o)) return o;
 
-    let md = d[MP_META_DATA] as TraxMetaData | undefined;
-    if (md) {
-        return new Promise(function (resolve, reject) {
-            md!.ncWatchers = FA_addItem(md!.ncWatchers, resolve);
-        }) as any;
-    }
-    return d;
+    let md = initMetaData(d);
+    return new Promise(function (resolve, reject) {
+        md!.ccWatchers = FA_addItem(md!.ccWatchers, resolve);
+        refreshContext.checkObject(d);
+    }) as any;
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -350,7 +345,7 @@ function $set<T>(obj: TraxObject, ΔΔPropName: string | number, newValue: any, 
         updateVal = true;
     } else {
         if (currentValue !== newValue) {
-            $touch(obj, true);
+            $touch(obj);
             updateVal = true;
         }
     }
@@ -372,7 +367,7 @@ function $set<T>(obj: TraxObject, ΔΔPropName: string | number, newValue: any, 
  * @param o the data node to mark as changed
  * @param selfChange true if the call is triggered by a change of a direct property, false otherwise (i.e. when in recursive call)
  */
-function $touch(o: TraxObject, selfChange: boolean = false) {
+function $touch(o: TraxObject) {
     // return true if the node was touched, false if it was already touched (i.e. marked as modified in the current update round)
     let firstTimeTouch = true;
 
@@ -383,18 +378,14 @@ function $touch(o: TraxObject, selfChange: boolean = false) {
         o.ΔChangeVersion = TRAX_COUNTER;
     }
 
-    if (selfChange) {
-        refreshContext.ensureRefresh(o);
-    } else {
-        // change is triggered by a child reference that will hold the refreshNode
-        refreshContext.increaseRefreshPriority(o);
-    }
+    refreshContext.checkObject(o);
+
     if (firstTimeTouch) {
         // recursively touch on parent nodes
         let md = o.ΔMd;
         if (md && md.parents) {
             FA_forEach(md.parents, function (p) {
-                $touch(p, false);
+                $touch(p);
             });
         }
     }
@@ -426,10 +417,6 @@ function disconnectChildFromParent(parent: TraxObject, child: TraxObject | null)
         let md = child.ΔMd;
         if (md && md.parents) {
             md.parents = FA_removeItem(md.parents, parent);
-
-            if (isBeingChanged(child)) {
-                refreshContext.decreaseRefreshPriority(parent);
-            }
         }
     }
 }
@@ -444,30 +431,11 @@ function connectChildToParent(parent: TraxObject, child: TraxObject | null) {
     if (child) {
         let md = initMetaData(child);
         md.parents = FA_addItem(md.parents, parent);
-
-        if (isBeingChanged(child)) {
-            // parent will be refreshed after the child
-            refreshContext.increaseRefreshPriority(parent);
-        }
     }
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // Refresh classes
-
-/**
- * Refresh linked list: contains all 'start' nodes that need to be processed/refreshed
- */
-class RefreshNode {
-    next: RefreshNode | undefined;
-    prev: RefreshNode | undefined;
-    dataNode: TraxObject | undefined;
-    ctxt: RefreshContext | undefined;
-
-    constructor(dn: TraxObject) {
-        this.dataNode = dn;
-    }
-}
 
 /**
  * Data Node watcher
@@ -481,131 +449,25 @@ interface DnWatcher {
  * Context holding a linked list of nodes that need to be refreshed
  */
 class RefreshContext {
-    first: RefreshNode | undefined;
-    last: RefreshNode | undefined;
+    objects: TraxObject[] = [];
 
     constructor() {
         TRAX_COUNTER++;
     }
 
     /**
-     * Get a refresh node from the pool (or create a new one) and initialize it
-     * @param dn the DataNode to associate to the refresh node
-     */
-    add(dn: TraxObject): RefreshNode {
-        let rn = refreshPool.pop();
-        if (!rn) {
-            rn = new RefreshNode(dn);
-        } else {
-            rn.dataNode = dn;
-        }
-
-        rn.prev = rn.next = undefined;
-        rn.ctxt = this;
-        if (!this.first) {
-            this.first = this.last = rn;
-            Promise.resolve().then(() => { this.refresh() });
-        } else {
-            // add last
-            let last = this.last!;
-            last.next = rn;
-            rn.prev = last;
-            this.last = rn;
-        }
-        return rn;
-    }
-
-
-    /**
-     * Release and reset a refresh node. Set it back to the refresh node pool
-     * @param rn the RefreshNode to release
-     */
-    release(rn: RefreshNode) {
-        if (rn.ctxt !== this) {
-            return;
-        }
-        let md = rn.dataNode!.ΔMd; // latestVersion(rn.dataNode)
-        if (!md) return;
-        md.refreshNode = undefined;
-        // warning: refreshDependencies may be > 0 when node is removed from list when a child takes precedence
-        rn.dataNode = undefined;
-        if (rn.prev) {
-            if (rn.next) {
-                rn.prev.next = rn.next;
-                rn.next.prev = rn.prev;
-            } else {
-                // rn is last
-                rn.prev.next = undefined;
-                this.last = rn.prev;
-            }
-        } else if (rn.next) {
-            // the node should be first
-            if (this.first === rn) {
-                this.first = rn.next;
-            }
-            rn.next.prev = undefined;
-        } else {
-            // both prev and next are null: this node should be the only node in the list
-            if (this.first === rn) {
-                this.first = this.last = undefined;
-            }
-        }
-        rn.ctxt = rn.prev = rn.next = undefined; // release all references
-        refreshPool.push(rn);
-    }
-
-    /**
-     * Ensure a data node will be refreshed
+     * Check if a data object needs to be refreshed (i.e. if it has a watcher)
+     * If refresh is needed, its md.refreshContext will be set
      * @param o 
      */
-    ensureRefresh(o: TraxObject) {
-        let md = initMetaData(o);
-        if (md.refreshPriority === 0 && !md.refreshNode) {
-            md.refreshNode = this.add(o);
-        }
-    }
-
-    /**
-     * Increase the refresh priority of a data node
-     * @param o
-     */
-    increaseRefreshPriority(o: TraxObject) {
-        let md = initMetaData(o);
-        if (md) {
-            md.refreshPriority++;
-            if (md.refreshNode) {
-                // priority is no more 0 so if node was in the refresh list we should remove it
-                md.refreshNode.ctxt!.release(md.refreshNode);
-                md.refreshNode = undefined;
-            }
-        }
-    }
-
-    /**
-     * Decrease the refresh priority of a data node
-     * E.g. when a child node has been refreshed
-     * @param o the data node
-     */
-    decreaseRefreshPriority(o?: TraxObject) {
-        if (!o) return;
+    checkObject(o: TraxObject) {
         let md = o.ΔMd;
-        if (md) {
-            let rd = --md.refreshPriority;
-            if (rd == 0) {
-                // add to refresh list
-                md.refreshNode = this.add(o);
-            }
-        }
-    }
-
-    /**
-     * Decrease the refresh priority of a data node list
-     * @param d the data node
-     */
-    decreaseRefreshPriorityOnList(list?: TraxObject[]) {
-        if (list) {
-            for (let d of list) {
-                this.decreaseRefreshPriority(d);
+        if (md && (md.watchers || md.ccWatchers) && !md.refreshCtxt) {
+            let isFirst = this.objects.length === 0;
+            this.objects.push(o);
+            md.refreshCtxt = this;
+            if (isFirst) {
+                Promise.resolve().then(() => { this.refresh() });
             }
         }
     }
@@ -614,50 +476,31 @@ class RefreshContext {
      * Refresh all the data nodes associated to the current context
      * @param syncWatchers flag indicating if watch callbacks should be called synchronously (default: true)
      */
-    refresh(syncWatchers = true): number {
-        let ctxt = this;
-        if (!ctxt.first) {
-            return 0;
-        }
+    refresh(syncWatchers = true) {
+        let objects = this.objects, len = objects.length;
+        if (!len) return;
+
+        // create a new refresh context (may be filled while we are executing watcher callbacks on current context)
         refreshContext = new RefreshContext();
 
         let o: TraxObject,
             md: TraxMetaData,
-            nextNext: RefreshNode | undefined,
-            keepGoing = true,
-            next = ctxt.first,
             instanceWatchers: DnWatcher[] = [],
             tempWatchers: DnWatcher[] = [];
 
-        // create new versions
-        while (keepGoing) {
-            if (!next) {
-                keepGoing = false;
-            } else {
-                o = next.dataNode!;
-                processNode(o, instanceWatchers, tempWatchers);
-                md = o.ΔMd!;
-                // ctxt.decreaseRefreshPriority(md.parent)
-                // ctxt.decreaseRefreshPriorityOnList(md.nextParents);
-                FA_forEach(md.parents, function (p) {
-                    ctxt.decreaseRefreshPriority(p)
-                })
-                nextNext = next.next;
-                ctxt.release(next);
-                if (nextNext) {
-                    next = nextNext;
-                } else {
-                    if (next === ctxt.first) {
-                        keepGoing = false;
-                    } else {
-                        next = ctxt.first;
-                    }
-                }
+        for (let i = 0; len > i; i++) {
+            o = objects[i]
+            md = o.ΔMd!;
+            if (md.watchers) {
+                // instanceWatchers = watchers callbacks (for all instances)
+                instanceWatchers.push({ dataNode: o, watchers: md.watchers });
             }
-        }
-        if (ctxt.first) {
-            // some node could not be refreshed: we have a circular dependency
-            console.error("Hibe error: some node could not be properly refreshed because of a circular dependency");
+            if (md.ccWatchers) {
+                // tempWatchers = callbacks used by changeComplete() - only 1 time
+                tempWatchers.push({ dataNode: o, watchers: md.ccWatchers });
+            }
+            md.ccWatchers = undefined; // remove current changeComplete callbacks
+            md.refreshCtxt = undefined;
         }
 
         let nbrOfCallbacks = instanceWatchers.length + tempWatchers.length;
@@ -675,22 +518,6 @@ class RefreshContext {
                 });
             }
         }
-
-        return nbrOfCallbacks;
-    }
-}
-
-function processNode(o: TraxObject, instanceWatchers: DnWatcher[], tempWatchers: DnWatcher[]) {
-    // add a new version at the end of the $next linked list
-    let md = o.ΔMd!, ncWatchers = md.ncWatchers;
-    md.ncWatchers = undefined; // remove current callbacks
-    if (md.watchers) {
-        // instanceWatchers = watchers callbacks (for all instances)
-        instanceWatchers.push({ dataNode: o, watchers: md.watchers });
-    }
-    if (ncWatchers) {
-        // tempWatchers = callbacks used by changeComplete() - only 1 time
-        tempWatchers.push({ dataNode: o, watchers: ncWatchers });
     }
 }
 
@@ -703,5 +530,4 @@ function callWatchers(watchers: DnWatcher[]) {
 }
 
 // list of all nodes that need to be refreshed
-let refreshContext: RefreshContext = new RefreshContext(),
-    refreshPool: RefreshNode[] = [];
+let refreshContext: RefreshContext = new RefreshContext();

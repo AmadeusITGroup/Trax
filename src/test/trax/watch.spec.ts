@@ -14,6 +14,7 @@ describe('Watchers', () => {
 
     //     await changeComplete(node);
     //     assert.equal(watcherCalls, 1, "1 watcher call");
+    //     add 2nd watcher
     //     node.value = "ABC";
     //     await changeComplete(node);
     //     assert.equal(watcherCalls, 2, "2 watcher calls");
