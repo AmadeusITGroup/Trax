@@ -122,7 +122,7 @@ export function computed(proto, propName: string, descriptor: PropertyDescriptor
 }
 
 export function version(o: any /*DataObject*/): number {
-    return 0; // TODO
+    return (o && o[MP_TRACKABLE] === true) ? o[MP_CHANGE_VERSION] : -1;
 }
 
 // export function touch(o: any /*DataObject*/): number {

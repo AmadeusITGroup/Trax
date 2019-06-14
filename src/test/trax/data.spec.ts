@@ -1,9 +1,8 @@
 import * as assert from 'assert';
 import { TestNode, SubTestNode, SimpleNode } from "./fixture";
-import { isBeingChanged, changeComplete, isDataObject } from '../../trax';
+import { isBeingChanged, changeComplete, isDataObject, version } from '../../trax';
 
 describe('Data objects', () => {
-
     const MP_META_DATA = "ΔMd", MP_VERSION = "ΔChangeVersion";
 
     it('should have correct init values', () => {
@@ -272,4 +271,25 @@ describe('Data objects', () => {
         assert.equal(n.ready, false, "default boolean");
     });
 
+    it('should support version()', async function () {
+        let n = new TestNode();
+
+        assert.equal(version(n), 0, "pristine version is 0");
+        assert.equal(version({}), -1, "version of non-trax object is -1");
+
+        n.value = "abc";
+        let v = version(n);
+        assert.notEqual(v, 0, "version changed");
+
+        n.value = "def";
+        assert.equal(version(n), v, "version didn't change");
+        assert.equal(isBeingChanged(n), true, "n is being changed");
+
+        await changeComplete();
+        assert.equal(version(n), v, "version didn't change (2)");
+        n.value = "def";
+        assert.equal(version(n), v, "version didn't change (3)");
+        n.value = "123";
+        assert.equal(version(n), v+1, "version changed again");
+    });
 });
