@@ -750,7 +750,7 @@ class TraxList<T> implements TraxObject {
     }
 }
 
-interface ArrayProxy<T> extends Array<T>, Factory<ArrayProxy<T>> {
+export interface ArrayProxy<T> extends Array<T> {
     $newItem(index?: number): T;
     $dispose(): T[];
 }

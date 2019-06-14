@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList, ArrTestNode, initNewArrTestNode } from './fixture';
-import { isBeingChanged, changeComplete, isDataObject, list, ΔfNbr, Δf, Δlf, Data } from '../../trax';
+import { isBeingChanged, changeComplete, isDataObject, list, ΔfNbr, Δf, Δlf, Data, ArrayProxy } from '../../trax';
 
 describe('Lists', () => {
 
@@ -277,8 +277,8 @@ describe('Lists', () => {
         }
 
         let ls = new LsNode(),
-            l0 = ls.list["$newItem"](),
-            l00 = l0["$newItem"]();
+            l0 = (ls.list as ArrayProxy<TestNode[]>).$newItem(),
+            l00 = (l0 as ArrayProxy<TestNode>).$newItem();
 
         assert.equal(ls.list[0][0].value, "v1", "default value 1");
         assert.equal(isBeingChanged(ls.list), true, "l is mutating");
