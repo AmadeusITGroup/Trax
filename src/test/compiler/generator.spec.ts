@@ -66,5 +66,41 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support types that can be null", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                streets: string[]
+                bar: Bar[] | null;
+                baz: Bar[][] | null;
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, ΔfStr, Δlf, Δp, Δf } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreets: string[]; @Δp(Δlf(ΔfStr)) streets: string[];
+                ΔΔbar: Bar[] | null; @Δp(Δlf(Δf(Bar)), 1) bar: Bar[] | null;
+                ΔΔbaz: Bar[][] | null; @Δp(Δlf(Δlf(Δf(Bar))), 1) baz: Bar[][] | null;
+            }
+        `, "1");
+    });
+
+    it("should support Arrays with item types that can be null", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                bar: (Bar | null)[]
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, Δf, Δlf, Δp } from "./trax";
+
+            @ΔD class Address {
+                ΔΔbar: (Bar | null)[]; @Δp(Δlf(Δf(Bar))) bar: (Bar | null)[];
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });

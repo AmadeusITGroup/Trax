@@ -180,6 +180,18 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
 
     function getTypeObject(n: ts.Node, raiseErrorIfInvalid = false, canBeUnion = true): DataType | null {
         if (n) {
+            if (n.kind === ts.SyntaxKind.ParenthesizedType) {
+                let count = 0, childNd: ts.Node | undefined;
+                (n as ts.ParenthesizedTypeNode).forEachChild((c) => {
+                    count++;
+                    childNd = c;
+                });
+                if (childNd && count === 1) {
+                    n = childNd;
+                } else {
+                    error("Unsupported parenthesized type", n);
+                }
+            }
             if (n.kind === ts.SyntaxKind.StringKeyword) {
                 return { kind: "string" }
             } else if (n.kind === ts.SyntaxKind.BooleanKeyword) {
@@ -194,7 +206,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
             } else if (n.kind === ts.SyntaxKind.ArrayType) {
                 return {
                     kind: "array",
-                    itemType: getTypeObject(n["elementType"], true) as any
+                    itemType: getTypeObject(n["elementType"], true, true) as any
                 }
             } else if (n.kind === ts.SyntaxKind.TypeLiteral) {
                 // expected to be something like dict: { [key: string]: Address }

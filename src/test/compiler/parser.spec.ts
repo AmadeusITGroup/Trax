@@ -461,5 +461,46 @@ describe('Parser', () => {
         }], "1");
     });
 
+    it("should support union types with null on arrays", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data } from "./trax";
+            let foo = "bar";
+
+            @Data class Address {
+                foo: (Bar | null)[];
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            insertPos: 49,
+            values: { Data: 1 },
+        }, {
+            "kind": "data",
+            "className": "Address",
+            "classNameEnd": 128,
+            "pos": 95,
+            "decoPos": 109,
+            "log": false,
+            "members": [{
+                "kind": "property",
+                "defaultValue": undefined,
+                "end": 167,
+                "namePos": 147,
+                "name": "foo",
+                "shallowRef": false,
+                "type": {
+                    "kind": "array",
+                    "itemType": {
+                        "kind": "reference",
+                        "canBeNull": true,
+                        "identifier": "Bar"
+                    }
+                }
+            }]
+        }], "1");
+    });
+
     // todo parse @computed
 });
