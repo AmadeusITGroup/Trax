@@ -502,5 +502,66 @@ describe('Parser', () => {
         }], "1");
     });
 
+    it("should support any type", async function () {
+        let r = parse(`\
+            // sample 1
+            import { Data } from "./trax";
+            let foo = "bar";
+
+            @Data class Address {
+                foo: any;
+                bar;
+                baz: any[]
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            insertPos: 49,
+            values: { Data: 1 },
+        }, {
+            "kind": "data",
+            "className": "Address",
+            "classNameEnd": 128,
+            "pos": 95,
+            "decoPos": 109,
+            "log": false,
+            "members": [{
+                "kind": "property",
+                "defaultValue": undefined,
+                "end": 156,
+                "namePos": 147,
+                "name": "foo",
+                "shallowRef": false,
+                "type": {
+                    "kind": "any"
+                }
+            }, {
+                "kind": "property",
+                "defaultValue": undefined,
+                "end": 177,
+                "namePos": 173,
+                "name": "bar",
+                "shallowRef": false,
+                "type": {
+                    "kind": "any"
+                }
+            }, {
+                "defaultValue": undefined,
+                "end": 204,
+                "kind": "property",
+                "name": "baz",
+                "namePos": 194,
+                "shallowRef": false,
+                "type": {
+                    "itemType": {
+                        "kind": "any"
+                    },
+                    "kind": "array"
+                }
+            }]
+        }], "1");
+    });
+
     // todo parse @computed
 });

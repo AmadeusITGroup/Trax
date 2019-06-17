@@ -118,7 +118,7 @@ export function generate(src: string, filePath: string): string {
                 tp = prop.type;
                 if (tp) {
                     let { typeRef, factory } = getTypeInfo(tp, n);
-                    if (tp.canBeNull) {
+                    if (tp.canBeNull || tp.kind === "any") {
                         nullArg1 = ", 1";
                     } else {
                         nullArg1 = "";
@@ -145,7 +145,11 @@ export function generate(src: string, filePath: string): string {
     function getTypeInfo(tp: DataType, n: DataObject): { typeRef: string, factory: string } {
         let typeRef = "", factory = "";
 
-        if (tp.kind === "string") {
+        if (tp.kind === "any") {
+            typeRef = "any";
+            factory = "ΔfNull";
+            addImport(factory);
+        } else if (tp.kind === "string") {
             typeRef = "string";
             factory = "ΔfStr";
             addImport(factory);

@@ -44,7 +44,7 @@ interface CodeFragment {
 export type DataType = BaseType | RefType | CollectionType;
 
 interface BaseType {
-    kind: "string" | "number" | "boolean";
+    kind: "string" | "number" | "boolean" | "any";
     canBeNull?: boolean;
 }
 

@@ -253,6 +253,13 @@ $fBool[MP_IS_FACTORY] = true;
 export let ΔfBool: Factory<boolean> = $fBool as Factory<boolean>;
 
 /**
+ * Factory function for null (!)
+ */
+function $fNull() { return null }
+$fNull[MP_IS_FACTORY] = true;
+export let ΔfNull: Factory<null> = $fNull as Factory<null>;
+
+/**
  * Fills a proto info structure with some more property description
  * @param proto the proto info structure
  * @param propName name of the property

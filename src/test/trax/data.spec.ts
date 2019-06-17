@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { TestNode, SubTestNode, SimpleNode } from "./fixture";
+import { TestNode, SubTestNode, SimpleNode, AnyNode } from "./fixture";
 import { isBeingChanged, changeComplete, isDataObject, version } from '../../trax';
 
 describe('Data objects', () => {
@@ -290,6 +290,86 @@ describe('Data objects', () => {
         n.value = "def";
         assert.equal(version(n), v, "version didn't change (3)");
         n.value = "123";
-        assert.equal(version(n), v+1, "version changed again");
+        assert.equal(version(n), v + 1, "version changed again");
     });
+
+    it("should support properties with any type", async function () {
+        let n = new AnyNode(), tn = new TestNode();
+
+        assert.equal(isBeingChanged(n), false, "unchanged");
+
+        n.foo = tn;
+        assert.equal(isBeingChanged(n), true, "changed");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (2)");
+
+        tn.value = "abc";
+        assert.equal(n.foo.value, "abc", "value properly set");
+        assert.equal(isBeingChanged(n), true, "changed (2)");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (3)");
+
+        // set non-data object
+        n.foo = { a: "AAA", b: "BBB" };
+        assert.equal(isBeingChanged(n), true, "changed (3)");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (4)");
+
+        n.foo.a = "abc";
+        assert.equal(n.foo.a, "abc", "value properly set (2)");
+        assert.equal(isBeingChanged(n), false, "unchanged (5)");
+
+        // set back new data object
+        n.foo = new TestNode();
+        assert.equal(isBeingChanged(n), true, "changed (6)");
+
+        await changeComplete();
+        assert.equal(n.foo.value, "v1", "value correctly read");
+        n.foo.value = "v2";
+        assert.equal(isBeingChanged(n), true, "changed (7)");
+    });
+
+    it("should support properties with any[] type", async function () {
+        let n = new AnyNode(), tn = new TestNode();
+        
+        assert.equal(isBeingChanged(n), false, "unchanged");
+
+        n.arr[0] = tn;
+        assert.equal(isBeingChanged(n), true, "changed");
+        assert.equal(n.arr[0].value, "v1", "v1");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (2)");
+
+        tn.value = "abc";
+        assert.equal(n.arr[0].value, "abc", "value properly set");
+        assert.equal(isBeingChanged(n), true, "changed (2)");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (3)");
+
+        // set non-data object
+        n.arr[1] = { a: "AAA", b: "BBB" };
+        assert.equal(isBeingChanged(n), true, "changed (3)");
+
+        await changeComplete();
+        assert.equal(isBeingChanged(n), false, "unchanged (4)");
+
+        n.arr[1].a = "abc";
+        assert.equal(n.arr[1].a, "abc", "value properly set (2)");
+        assert.equal(isBeingChanged(n), false, "unchanged (5)");
+
+        // set back new data object
+        n.arr[1] = new TestNode();
+        assert.equal(isBeingChanged(n), true, "changed (6)");
+
+        await changeComplete();
+        assert.equal(n.arr[1].value, "v1", "value correctly read");
+        n.arr[1].value = "v2";
+        assert.equal(isBeingChanged(n), true, "changed (7)");
+    });
+
 });

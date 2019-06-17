@@ -102,5 +102,26 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support any types", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                streets: any[]
+                bar;
+                baz: any;
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, ΔfNull, Δlf, Δp } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreets: any[]; @Δp(Δlf(ΔfNull)) streets: any[];
+                ΔΔbar; @Δp(ΔfNull, 1) bar: any;
+                ΔΔbaz: any; @Δp(ΔfNull, 1) baz: any;
+            }
+        `, "1");
+    });
+
+    // todo export property generator
     // todo support import Data from "./trax" -> default import ?;
 });

@@ -16,6 +16,11 @@ import { Data } from '../../trax';
     ready: boolean;
 }
 
+@Data export class AnyNode {
+    foo: any;
+    arr: any[];
+}
+
 @Data export class BaseTestNode {
     value = "v1";
     node: TestNode;
