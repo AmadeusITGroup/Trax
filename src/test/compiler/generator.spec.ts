@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate } from '../../trax/compiler/generator';
+import { generate, getPropertyDefinition } from '../../trax/compiler/generator';
 
 describe('Generator', () => {
 
@@ -112,14 +112,29 @@ describe('Generator', () => {
                 baz: any;
             }
         `, 'myFile.ts'), `
-            import { ΔD, ΔfNull, Δlf, Δp } from "./trax";
+            import { ΔD, Δlf, Δp } from "./trax";
 
             @ΔD class Address {
-                ΔΔstreets: any[]; @Δp(Δlf(ΔfNull)) streets: any[];
-                ΔΔbar; @Δp(ΔfNull, 1) bar: any;
-                ΔΔbaz: any; @Δp(ΔfNull, 1) baz: any;
+                ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
+                ΔΔbar; @Δp() bar: any;
+                ΔΔbaz: any; @Δp() baz: any;
             }
         `, "1");
+    });
+
+    it("should allow to generate any property individually", async function () {
+        assert.equal(getPropertyDefinition({ name: "foo" }),
+            "ΔΔfoo: any; @Δp() foo: any;",
+            "1");
+
+        assert.equal(getPropertyDefinition({ name: "foo", type: { kind: "string" } }, "x."),
+            "ΔΔfoo: string; @x.Δp(x.ΔfStr) foo: string;",
+            "2");
+
+
+        assert.equal(getPropertyDefinition({ name: "bar", type: { kind: "array", itemType: { kind: "reference", identifier: "Bar" } } }, "x."),
+            "ΔΔbar: Bar[]; @x.Δp(x.Δlf(x.Δf(Bar))) bar: Bar[];",
+            "3");
     });
 
     // todo export property generator

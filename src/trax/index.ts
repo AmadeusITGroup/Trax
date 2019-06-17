@@ -202,14 +202,19 @@ export function ΔD(c: any) {
  * Adds getter / setter 
  * @param factory 
  */
-export function Δp<T>(factory: Factory<T>, canBeNull?: 1) {
+export function Δp<T>(factory?: Factory<T>, canBeNull?: 1) {
+    if (!factory) {
+        factory = $fNull as any;
+        canBeNull = 1;
+    }
+
     return function (proto, key: string) {
         // proto = object prototype
         // key = the property name (e.g. "value")
         let ΔΔKey = "ΔΔ" + key, cbn = canBeNull === 1;
         addPropertyInfo(proto, key, false, {
-            get: function () { return ΔGet(<any>this, ΔΔKey, key, factory, cbn); },
-            set: function (v) { ΔSet(<any>this, ΔΔKey, v, factory, <any>this); },
+            get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, cbn); },
+            set: function (v) { ΔSet(<any>this, ΔΔKey, v, factory!, <any>this); },
             enumerable: true,
             configurable: true
         });
@@ -773,12 +778,13 @@ export function list<T>(cf: Constructor<T> | Factory<T>): ArrayProxy<T> {
 export let Δls = list;
 
 // Creates a list factory for a specific ItemFactory
-function $lf<T>(itemFactory: Factory<T>): Factory<ArrayProxy<T>> {
-    function listFactory() { return TraxList.ΔNewProxy(itemFactory) }
+function $lf<T>(itemFactory?: Factory<T>): Factory<ArrayProxy<T>> {
+    itemFactory = itemFactory || ΔfNull as any;
+    function listFactory() { return TraxList.ΔNewProxy(itemFactory!) }
     listFactory[MP_IS_FACTORY] = true;
     listFactory[MP_CREATE_PROXY] = function (arr) {
-        return TraxList.ΔCreateProxy(arr, itemFactory);
+        return TraxList.ΔCreateProxy(arr, itemFactory!);
     }
     return listFactory as Factory<ArrayProxy<T>>;
 };
-export let Δlf = $lf as <T>(itemFactory: Factory<T>) => Factory<ArrayProxy<T>>;
+export let Δlf = $lf as <T>(itemFactory?: Factory<T>) => Factory<ArrayProxy<T>>;
