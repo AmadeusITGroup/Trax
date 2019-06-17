@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate } from '../../compiler/generator';
+import { generate } from '../../trax/compiler/generator';
 
 describe('Generator', () => {
 

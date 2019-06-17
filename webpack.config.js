@@ -20,7 +20,7 @@ module.exports = [{
             },
             {
                 test: /\.(ts|js)$/,
-                loader: "./dist/webpack/loader.js"
+                loader: "./dist/trax/webpack/loader.js"
             }
         ]
     },
