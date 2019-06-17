@@ -2,8 +2,6 @@ import { createVariableDeclaration } from 'typescript';
 
 const MP_TRACKABLE = "ΔTrackable",
     MP_CHANGE_VERSION = "ΔChangeVersion", // last changed meta property
-    MP_META_DATA = "ΔMd",
-    MP_DATA_FACTORY = "ΔDataFactory",
     MP_FACTORY = "ΔFactory",
     MP_IS_FACTORY = "ΔIsFactory",
     MP_IS_PROXY = "ΔIsProxy",
@@ -768,14 +766,12 @@ export interface ArrayProxy<T> extends Array<T> {
 }
 
 /**
- * Return a new list of cf items that is also a factory to create new lists of cf items
+ * Return a new list of cf items 
  * @param cf list item Constructor or Factory object
  */
 export function list<T>(cf: Constructor<T> | Factory<T>): ArrayProxy<T> {
     return TraxList.ΔNewProxy(createFactory(cf));
 }
-
-export let Δls = list;
 
 // Creates a list factory for a specific ItemFactory
 function $lf<T>(itemFactory?: Factory<T>): Factory<ArrayProxy<T>> {

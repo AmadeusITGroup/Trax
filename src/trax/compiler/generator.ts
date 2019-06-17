@@ -135,12 +135,12 @@ export function generate(src: string, filePath: string): string {
     }
 }
 
-export function getClassDecorator() {
-    return "@" + CLASS_DECO;
+export function getClassDecorator(libPrefix = "") {
+    return libPrefix + "@" + CLASS_DECO;
 }
 
-export function getPropertyDefinition(m: DataMember, prefix = "") {
-    return propertyDefinition(m, true, undefined, prefix);
+export function getPropertyDefinition(m: DataMember, libPrefix = "") {
+    return propertyDefinition(m, true, undefined, libPrefix);
 }
 
 function propertyDefinition(m: DataMember, includePrivateDefinition = true, addImport?: (symbol: string) => void, libPrefix = ""): string {
