@@ -136,7 +136,7 @@ export function generate(src: string, filePath: string): string {
 }
 
 export function getClassDecorator(libPrefix = "") {
-    return libPrefix + "@" + CLASS_DECO;
+    return "@" + libPrefix + CLASS_DECO;
 }
 
 export function getPropertyDefinition(m: DataMember, libPrefix = "") {

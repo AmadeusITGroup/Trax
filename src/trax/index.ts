@@ -33,7 +33,7 @@ export interface Factory<T> {
 }
 
 function initMetaData(o: TraxObject): TraxMetaData | null {
-    if (!o.ΔTrackable) return null;
+    if (!o || !o.ΔTrackable) return null;
     if (!o.ΔMd) {
         return o.ΔMd = {
             parents: undefined,
@@ -157,14 +157,16 @@ type WatchFunction = (o: TraxObject) => void;
  * @param fn the function to call when the data node changes (the new data node version will be passed as argument)
  * @return the watch function that can be used as identifier to un-watch the object (cf. unwatch)
  */
-export function watch(o: any, fn: WatchFunction): WatchFunction {
+export function watch(o: any, fn: WatchFunction): WatchFunction | null {
     let md = initMetaData(o);
-    if (md) {
+    if (md && fn) {
         // console.log("FA_addItem: watch")
         md.watchers = FA_addItem(md.watchers, fn);
         if (isBeingChanged(o)) {
             refreshContext.checkObject(o);
         }
+    } else {
+        return null;
     }
     return fn;
 }
@@ -174,9 +176,9 @@ export function watch(o: any, fn: WatchFunction): WatchFunction {
  * @param d the targeted data node
  * @param watchFn the watch function that should not be called any longer (returned by watch(...))
  */
-export function unwatch(o: any, watchFn: WatchFunction) {
+export function unwatch(o: any, watchFn: WatchFunction | null) {
     let md = initMetaData(o);
-    if (md) {
+    if (md && watchFn) {
         md.watchers = FA_removeItem(md.watchers, watchFn);
     }
 }

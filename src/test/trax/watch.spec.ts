@@ -41,6 +41,11 @@ describe('Watchers', () => {
         assert.equal(watcherCalls2, 2, "2 watcher2 calls (2)");
     });
 
+    it('should accept undefined values for watch()', async function () {
+        function f() { }
+        assert.equal(watch(undefined, f), null, "watch not registered");
+    });
+
     // it('should support watch and unwatch', async function () {
     //     let node = initNewArrTestNode(), watcherCalls = 0;
 
