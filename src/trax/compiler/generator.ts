@@ -135,12 +135,15 @@ export function generate(src: string, filePath: string): string {
     }
 }
 
-export function getClassDecorator(libPrefix = "") {
+export function getClassDecorator(libPrefix = "", addImport?: (symbol: string) => void) {
+    if (addImport) {
+        addImport(libPrefix + CLASS_DECO);
+    }
     return "@" + libPrefix + CLASS_DECO;
 }
 
-export function getPropertyDefinition(m: DataMember, libPrefix = "") {
-    return propertyDefinition(m, true, undefined, libPrefix);
+export function getPropertyDefinition(m: DataMember, libPrefix = "", addImport?: (symbol: string) => void) {
+    return propertyDefinition(m, true, addImport, libPrefix);
 }
 
 function propertyDefinition(m: DataMember, includePrivateDefinition = true, addImport?: (symbol: string) => void, libPrefix = ""): string {
@@ -155,7 +158,7 @@ function propertyDefinition(m: DataMember, includePrivateDefinition = true, addI
         privateDef = `${PRIVATE_PREFIX}${m.name}: ${typeRef}; `
     }
 
-    addImport("Δp");
+    addImport(libPrefix + "Δp");
     return `${privateDef}@${libPrefix}Δp(${factory}${nullArg1}) ${m.name}: ${typeRef};`;
 }
 
@@ -184,7 +187,7 @@ function getTypeInfo(tp: DataType | undefined, addImport: (symbol: string) => vo
     } else if (tp.kind === "reference") {
         typeRef = tp.identifier;
         factory = libPrefix + "Δf(" + typeRef + ")";
-        addImport("Δf");
+        addImport(libPrefix + "Δf");
     } else if (tp.kind === "array") {
         if (tp.itemType) {
             let info = getTypeInfo(tp.itemType, addImport, libPrefix);
@@ -194,7 +197,7 @@ function getTypeInfo(tp: DataType | undefined, addImport: (symbol: string) => vo
                 typeRef = info.typeRef + "[]"
             }
             factory = libPrefix + "Δlf(" + info.factory + ")";
-            addImport("Δlf");
+            addImport(libPrefix + "Δlf");
         } else {
             throw new Error("Item type must be specified in Arrays");
         }

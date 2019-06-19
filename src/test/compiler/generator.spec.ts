@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate, getPropertyDefinition } from '../../trax/compiler/generator';
+import { generate, getPropertyDefinition, getClassDecorator } from '../../trax/compiler/generator';
 
 describe('Generator', () => {
 
@@ -131,10 +131,28 @@ describe('Generator', () => {
             "ΔΔfoo: string; @x.Δp(x.ΔfStr) foo: string;",
             "2");
 
+        let imports = {}
+        function addImport(symbol) {
+            imports[symbol] = 1;
+        }
 
-        assert.equal(getPropertyDefinition({ name: "bar", type: { kind: "array", itemType: { kind: "reference", identifier: "Bar" } } }, "x."),
-            "ΔΔbar: Bar[]; @x.Δp(x.Δlf(x.Δf(Bar))) bar: Bar[];",
+        assert.equal(getPropertyDefinition({ name: "bar", type: { kind: "array", itemType: { kind: "reference", identifier: "Bar" } } }, "xxx", addImport),
+            "ΔΔbar: Bar[]; @xxxΔp(xxxΔlf(xxxΔf(Bar))) bar: Bar[];",
             "3");
+
+        assert.deepEqual(imports, {
+            "xxxΔf": 1, "xxxΔlf": 1, "xxxΔp": 1
+        }, "4");
+    });
+
+    it("should allow to generate class decorator individually", async function () {
+        let imports = {}
+        function addImport(symbol) {
+            imports[symbol] = 1;
+        }
+
+        assert.equal(getClassDecorator("xxx", addImport), "@xxxΔD", "1");
+        assert.deepEqual(imports, { "xxxΔD": 1 }, "2");
     });
 
     // todo export property generator
