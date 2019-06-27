@@ -455,7 +455,8 @@ describe('Parser', () => {
                 "type": {
                     "kind": "reference",
                     "identifier": "Bar",
-                    "canBeNull": true
+                    "canBeNull": true,
+                    "canBeUndefined": false
                 }
             }]
         }], "1");
@@ -495,6 +496,7 @@ describe('Parser', () => {
                     "itemType": {
                         "kind": "reference",
                         "canBeNull": true,
+                        "canBeUndefined": false,
                         "identifier": "Bar"
                     }
                 }

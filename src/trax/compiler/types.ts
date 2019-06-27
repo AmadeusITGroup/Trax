@@ -53,16 +53,19 @@ export type DataType = BaseType | RefType | CollectionType;
 interface BaseType {
     kind: "string" | "number" | "boolean" | "any";
     canBeNull?: boolean;
+    canBeUndefined?: boolean;
 }
 
 interface RefType {
     kind: "reference";
     identifier: string;        // e.g. "Foo"
     canBeNull?: boolean;
+    canBeUndefined?: boolean;
 }
 
 interface CollectionType {
     kind: "array" | "map" | "dictionary";
     itemType: DataType;
     canBeNull?: boolean;
+    canBeUndefined?: boolean;
 }

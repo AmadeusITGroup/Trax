@@ -86,6 +86,26 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support types that can be undefined", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                street?: string
+                bar: Bar[] | undefined | null;
+                baz?: Bar[][];
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, ΔfStr, Δp, Δf, Δlf } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreet?: string; @Δp(ΔfStr, 2) street?: string;
+                ΔΔbar: Bar[] | undefined | null; @Δp(Δlf(Δf(Bar)), 3) bar?: Bar[] | null;
+                ΔΔbaz?: Bar[][]; @Δp(Δlf(Δlf(Δf(Bar))), 2) baz?: Bar[][];
+            }
+        `, "1");
+    });
+
     it("should support Arrays with item types that can be null", async function () {
         assert.equal(generate(`
             import { Data } from "./trax";

@@ -149,9 +149,17 @@ export function getPropertyDefinition(m: DataMember, libPrefix = "", addImport?:
 function propertyDefinition(m: DataMember, includePrivateDefinition = true, addImport?: (symbol: string) => void, libPrefix = ""): string {
     addImport = addImport || function () { };
 
-    let tp = m.type, { typeRef, factory } = getTypeInfo(tp, addImport, libPrefix), privateDef = "", nullArg1 = "";
-    if (tp && tp.canBeNull) {
-        nullArg1 = ", 1";
+    let tp = m.type, { typeRef, factory } = getTypeInfo(tp, addImport, libPrefix), privateDef = "", nullUndefinedArg = "", questionSymbol = "";
+    if (tp && (tp.canBeNull || tp.canBeUndefined)) {
+        if (tp.canBeNull && tp.canBeUndefined) {
+            questionSymbol = "?";
+            nullUndefinedArg = ", 3";
+        } else if (tp.canBeUndefined) {
+            questionSymbol = "?";
+            nullUndefinedArg = ", 2";
+        } else {
+            nullUndefinedArg = ", 1";
+        }
     }
 
     if (includePrivateDefinition) {
@@ -159,7 +167,7 @@ function propertyDefinition(m: DataMember, includePrivateDefinition = true, addI
     }
 
     addImport(libPrefix + "Δp");
-    return `${privateDef}@${libPrefix}Δp(${factory}${nullArg1}) ${m.name}: ${typeRef};`;
+    return `${privateDef}@${libPrefix}Δp(${factory}${nullUndefinedArg}) ${m.name}${questionSymbol}: ${typeRef};`;
 }
 
 

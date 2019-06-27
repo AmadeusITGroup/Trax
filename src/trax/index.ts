@@ -235,18 +235,18 @@ export function ΔD(c: any) {
  * Adds getter / setter 
  * @param factory 
  */
-export function Δp<T>(factory?: Factory<T>, canBeNull?: 1) {
+export function Δp<T>(factory?: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3) {
     if (!factory) {
         factory = $fNull as any;
-        canBeNull = 1;
+        canBeNullOrUndefined = 3;
     }
 
     return function (proto, key: string) {
         // proto = object prototype
         // key = the property name (e.g. "value")
-        let ΔΔKey = "ΔΔ" + key, cbn = canBeNull === 1;
+        let ΔΔKey = "ΔΔ" + key;
         addPropertyInfo(proto, key, false, {
-            get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, cbn); },
+            get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, canBeNullOrUndefined); },
             set: function (v) { ΔSet(<any>this, ΔΔKey, v, factory!, <any>this); },
             enumerable: true,
             configurable: true
@@ -331,7 +331,7 @@ function addPropertyInfo(proto: any, propName: string, isDataNode: boolean, desc
  * @param propName [optional] the json data node property name - should only be set for data node properties. Same value as propName but without the $$ prefix
  * @param cf [optional] the constructor or factory associated with the property Object
  */
-function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory: Factory<T>, canBeNull: boolean): any {
+function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3): any {
     // if (o.$computeDependencies) {
     //     o.$computeDependencies[propName] = true;
     // }
@@ -393,7 +393,16 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
     // }
     let value = o[ΔΔPropName];
     if (value === undefined) {
-        value = o[ΔΔPropName] = canBeNull ? null : factory();
+        if (canBeNullOrUndefined) {
+            if (canBeNullOrUndefined > 1) {
+                // can be undefined 
+                value = o[ΔΔPropName] = undefined;
+            } else {
+                value = o[ΔΔPropName] = null;
+            }
+        } else {
+            value = o[ΔΔPropName] = factory();
+        }
         ΔConnectChildToParent(o, value);
     }
     return value;

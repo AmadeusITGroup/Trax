@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, SubTestNode, SimpleNode, AnyNode } from "./fixture";
-import { isMutating, changeComplete, isDataObject, version, numberOfWatchers } from '../../trax';
+import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data } from '../../trax';
 
 describe('Data objects', () => {
     const MP_META_DATA = "ΔMd", MP_VERSION = "ΔChangeVersion";
@@ -385,6 +385,22 @@ describe('Data objects', () => {
         assert.equal(n.arr[1].value, "v1", "value correctly read");
         n.arr[1].value = "v2";
         assert.equal(isMutating(n), true, "changed (7)");
+    });
+
+    it("should support properties that can be undefined", function () {
+        @Data class TestData {
+            prop0: string;
+            prop1?: string;
+            prop2: string | null;
+            prop3?: string | null | undefined;
+            prop4: string | null | undefined;
+        }
+        let d = new TestData();
+        assert.equal(d.prop0, "", "0");
+        assert.equal(d.prop1, undefined, "1");
+        assert.equal(d.prop2, null, "2");
+        assert.equal(d.prop3, undefined, "3");
+        assert.equal(d.prop4, undefined, "4");
     });
 
 });

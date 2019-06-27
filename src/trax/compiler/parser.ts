@@ -122,11 +122,9 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
         }
 
         if (node.members) {
-            let members = node.members, name, isSimpleType = false, processedPropData: [string, string] | null, typeName: string, canBeUndefined: boolean;
+            let members = node.members, canBeUndefined: boolean;
             for (let i = 0, len = members.length; len > i; i++) {
-                isSimpleType = false;
                 canBeUndefined = false;
-                typeName = "";
                 let m = members[i];
                 // processedPropData = this.processProcessorDecorator(m);
 
@@ -145,17 +143,21 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                     shallowRef: hasRefDecorator(m),
                     type: undefined,
                     defaultValue: undefined
-                }
+                };
+
                 m.forEachChild((c) => {
                     if (c.kind === ts.SyntaxKind.Identifier) {
                         prop.name = c.getText();
                         prop.namePos = c.end - prop.name.length;
+                    } else if (c.kind === ts.SyntaxKind.QuestionToken) {
+                        canBeUndefined = true;
                     } else {
                         let tp = getTypeObject(c, false);
                         if (tp) {
                             prop.type = tp;
                         } else if (!handleDefaultValue(c, prop) && c.kind !== ts.SyntaxKind.Decorator) {
                             if (c.kind !== ts.SyntaxKind.Parameter && c.getText() !== "any") {
+                                // console.log(c);
                                 error("Unsupported syntax", c);
                             }
                         }
@@ -163,6 +165,9 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                 });
                 if (!prop.type) {
                     prop.type = { kind: "any" };
+                }
+                if (canBeUndefined) {
+                    prop.type.canBeUndefined = true;
                 }
                 obj.members.push(prop);
             }
@@ -230,13 +235,15 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                 }
             } else if (canBeUnion && n.kind === ts.SyntaxKind.UnionType) {
                 // types should be either undefined or DataNode types
-                let ut = <ts.UnionTypeNode>n, canBeNull = false;
+                let ut = <ts.UnionTypeNode>n, canBeNull = false, canBeUndefined = false;
                 if (ut.types) {
                     let idx = ut.types.length, dt: DataType | null = null;
                     while (idx--) {
                         let tp = ut.types[idx];
                         if (tp.kind === ts.SyntaxKind.NullKeyword) {
                             canBeNull = true;
+                        } else if (tp.kind === ts.SyntaxKind.UndefinedKeyword) {
+                            canBeUndefined = true;
                         } else {
                             dt = getTypeObject(tp, false, false);
                             if (!dt) {
@@ -245,8 +252,9 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                             }
                         }
                     }
-                    if (dt && canBeNull) {
-                        dt.canBeNull = true;
+                    if (dt && (canBeNull || canBeUndefined)) {
+                        dt.canBeNull = dt.canBeNull || canBeNull;
+                        dt.canBeUndefined = dt.canBeUndefined || canBeUndefined;
                         return dt;
                     }
                 }
