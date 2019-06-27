@@ -284,29 +284,6 @@ describe('Data objects', () => {
         assert.equal(n.ready, false, "default boolean");
     });
 
-    it('should support version()', async function () {
-        let n = new TestNode();
-
-        assert.equal(version(n), 0, "pristine version is 0");
-        assert.equal(version({}), 0, "version of non-trax object is 0");
-
-        n.value = "abc";
-        let v1 = version(n);
-        assert.equal(v1, 1, "version changed to 1");
-
-        n.value = "def";
-        assert.equal(version(n), v1, "version is still 1");
-        assert.equal(isMutating(n), true, "n is being changed");
-
-        await changeComplete(n);
-        let v2 = version(n);
-        assert.equal(v2, 2, "version is now 2 (stable");
-        n.value = "def";
-        assert.equal(version(n), 2, "version is still 2 (unchanged)");
-        n.value = "123";
-        assert.equal(version(n), 3, "version moved to 3");
-    });
-
     it("should support properties with any type", async function () {
         let n = new AnyNode(), tn = new TestNode();
 

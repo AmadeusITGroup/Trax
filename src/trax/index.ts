@@ -6,6 +6,8 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_IS_PROXY = "ΔIsProxy",
     MP_CREATE_PROXY = "ΔCreateProxy";
 
+let FORCE_CREATION = false;
+
 export interface TraxObject {
     ΔTrackable: true;
     ΔChangeVersion: number;
@@ -216,6 +218,22 @@ export function numberOfWatchers(o: any): number {
     return 0;
 }
 
+/**
+ * Force the creation of a property instance even if it can be null or undefined
+ * @param o a Data Object
+ * @param propName the property name
+ */
+export function create(o: any, propName: string): any {
+    if (o && propName) {
+        // using a global variable is quite ugly, but still the best option to avoid making all data node instances heavier
+        FORCE_CREATION = true;
+        let res = o[propName]
+        FORCE_CREATION = false;
+        return res;
+    }
+    return undefined;
+}
+
 // -----------------------------------------------------------------------------------------------------------------------------
 // trax private apis (generated code)
 
@@ -392,8 +410,8 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
     //     }
     // }
     let value = o[ΔΔPropName];
-    if (value === undefined) {
-        if (canBeNullOrUndefined) {
+    if (value === undefined || (FORCE_CREATION && value === null)) {
+        if (!FORCE_CREATION && canBeNullOrUndefined) {
             if (canBeNullOrUndefined > 1) {
                 // can be undefined 
                 value = o[ΔΔPropName] = undefined;
