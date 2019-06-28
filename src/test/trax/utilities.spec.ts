@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode } from "./fixture";
-import { isMutating, changeComplete, version, Data, create, reset } from '../../trax';
+import { isMutating, changeComplete, version, Data, create, reset, hasProperty } from '../../trax';
 
 describe('Trax utilities', () => {
 
@@ -97,6 +97,23 @@ describe('Trax utilities', () => {
         assert.equal(v.value, "v1", "node.value is back to v1 (2)");
         assert.equal(v, d.node, "d.node reset");
         assert.notEqual(d.node, node1, "node changed");
+    });
+
+    it("should allow to know if a Data object supports a given property", function () {
+        let n = new TestNode();
+        assert.equal(hasProperty(n, "value"), true, "1");
+        assert.equal(hasProperty(n, "node"), true, "2");
+        assert.equal(hasProperty(n, "node2"), true, "3");
+
+        n.node.value = "v2";
+        assert.equal(hasProperty(n, "node"), true, "4");
+
+        assert.equal(hasProperty(undefined, "foo"), false, "5");
+        assert.equal(hasProperty(1234, "foo"), false, "6");
+        assert.equal(hasProperty(false, "foo"), false, "7");
+        assert.equal(hasProperty("", "foo"), false, "8");
+        assert.equal(hasProperty(null, "foo"), false, "9");
+        assert.equal(hasProperty(n, "foo"), false, "10");
     });
 
 });

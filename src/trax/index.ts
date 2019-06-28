@@ -135,14 +135,9 @@ export function version(o: any /*DataObject*/): number {
     return (o && o[MP_TRACKABLE] === true) ? o[MP_CHANGE_VERSION] : 0;
 }
 
-// export function touch(o: any /*DataObject*/): number {
-//     // necessary to touch param nodes if $content changes (= contains instructions)
-//     return 0; // return new version if DataObject or 0 if not
-// }
-
-// export function hasProperty(o: any /*TraxObject*/, property: string): boolean {
-//     return false; // TODO
-// }
+export function hasProperty(o: any /*TraxObject*/, propName: string): boolean {
+    return (o && typeof o === "object") ? ("ΔΔ" + propName) in o : false;
+}
 
 export function isDataObject(o: any /*TraxObject*/): boolean {
     return !!(o && o[MP_TRACKABLE] === true);
@@ -304,6 +299,7 @@ export function Δp<T>(factory?: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3) {
         } else {
             factories[key] = factory!;
         }
+        proto[ΔΔKey] = undefined; // force the creation of a property to know if property is valid with hasProperty 
 
         addPropertyInfo(proto, key, false, {
             get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, canBeNullOrUndefined); },
