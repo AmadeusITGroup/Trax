@@ -106,6 +106,26 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should generate ΔDefault method", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                street?: string = "";
+                zip: number = 12345;
+                country
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, ΔfStr, Δp, ΔfNbr, Δu } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreet?: string = ""; @Δp(ΔfStr, 2) street?: string;
+                ΔΔzip: number = 12345; @Δp(ΔfNbr) zip: number;
+                ΔΔcountry; @Δp() country: any; ΔDefault(n) {switch (n) {case "street": return  ""; case "zip": return  12345}; return Δu;};
+            }
+        `, "1");
+    });
+
     it("should support Arrays with item types that can be null", async function () {
         assert.equal(generate(`
             import { Data } from "./trax";

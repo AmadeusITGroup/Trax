@@ -2,8 +2,10 @@
 const MP_TRACKABLE = "ΔTrackable",
     MP_CHANGE_VERSION = "ΔChangeVersion", // last changed meta property
     MP_FACTORY = "ΔFactory",
+    MP_DEFAULT_FACTORIES = "ΔDefFactories",
     MP_IS_FACTORY = "ΔIsFactory",
     MP_IS_PROXY = "ΔIsProxy",
+    MP_DEFAULT = "ΔDefault",
     MP_CREATE_PROXY = "ΔCreateProxy";
 
 let FORCE_CREATION = false;
@@ -222,6 +224,7 @@ export function numberOfWatchers(o: any): number {
  * Force the creation of a property instance even if it can be null or undefined
  * @param o a Data Object
  * @param propName the property name
+ * @returns the new property value
  */
 export function create(o: any, propName: string): any {
     if (o && propName) {
@@ -230,6 +233,32 @@ export function create(o: any, propName: string): any {
         let res = o[propName]
         FORCE_CREATION = false;
         return res;
+    }
+    return undefined;
+}
+
+/**
+ * Reset a property to its initial value
+ * @param o a Data Object
+ * @param propName the property name
+ * @returns the new property value
+ */
+export function reset(o: any, propName: string): any {
+    if (o && propName) {
+        // retrieve the default init value - if any
+        let def = o[MP_DEFAULT];
+        if (def) {
+            let v = def(propName);
+            if (v !== Δu) {
+                return o[propName] = v;
+            }
+        }
+
+        // using a global variable is quite ugly, but still the best option to avoid making all data node instances heavier
+        let factories = o[MP_DEFAULT_FACTORIES], f = factories ? factories[propName] : null;
+        if (f) {
+            return o[propName] = f();
+        }
     }
     return undefined;
 }
@@ -262,7 +291,20 @@ export function Δp<T>(factory?: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3) {
     return function (proto, key: string) {
         // proto = object prototype
         // key = the property name (e.g. "value")
-        let ΔΔKey = "ΔΔ" + key;
+        let ΔΔKey = "ΔΔ" + key, factories = proto[MP_DEFAULT_FACTORIES];
+        if (!factories) {
+            factories = proto[MP_DEFAULT_FACTORIES] = {}
+        }
+        if (canBeNullOrUndefined) {
+            if (canBeNullOrUndefined === 1) {
+                factories[key] = $fNull;
+            } else {
+                factories[key] = $fUndefined;
+            }
+        } else {
+            factories[key] = factory!;
+        }
+
         addPropertyInfo(proto, key, false, {
             get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, canBeNullOrUndefined); },
             set: function (v) { ΔSet(<any>this, ΔΔKey, v, factory!, <any>this); },
@@ -271,6 +313,11 @@ export function Δp<T>(factory?: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3) {
         });
     }
 }
+
+/**
+ * Undefined symbol - returned by ΔDefault methods to differentiate no default from undefined
+ */
+export const Δu = {};
 
 /**
  * Generate a factory function for a given Data class reference
@@ -314,6 +361,9 @@ export let ΔfBool: Factory<boolean> = $fBool as Factory<boolean>;
 function $fNull() { return null }
 $fNull[MP_IS_FACTORY] = true;
 export let ΔfNull: Factory<null> = $fNull as Factory<null>;
+
+function $fUndefined() { return undefined };
+$fUndefined[MP_IS_FACTORY] = true;
 
 /**
  * Fills a proto info structure with some more property description

@@ -5,7 +5,7 @@ const DATA = "Data",
     DATA_DECO = "@" + DATA,
     CLASS_DECO = "ΔD",
     PRIVATE_PREFIX = "ΔΔ",
-    RX_LOG = /\/\/\s*trax\:log/,
+    RX_LOG = /\/\/\s*trax\:\s*log/,
     RX_NULL_TYPE = /\|\s*null$/;
 
 export function generate(src: string, filePath: string): string {
@@ -107,7 +107,9 @@ export function generate(src: string, filePath: string): string {
         let len = n.members.length,
             prop: DataProperty,
             m: DataProperty | ComputedProperty,
-            tp: DataType | undefined;
+            tp: DataType | undefined,
+            defaultValues: string[] = [],
+            lastInsertPos = -1;
         for (let i = 0; len > i; i++) {
             m = n.members[i]
             if (m.kind === "property") {
@@ -123,7 +125,12 @@ export function generate(src: string, filePath: string): string {
                         // add new property definition
                         // e.g. @Δp(ΔfStr) street: string;
                         insert(" " + propertyDefinition(prop, false, addImport), prop.end);
+                        lastInsertPos = prop.end;
                         // insert(` @Δp(${factory}${nullArg1}) ${prop.name}: ${typeRef};`, prop.end);
+
+                        if (prop.defaultValue) {
+                            defaultValues.push(`case "${prop.name}": return ${prop.defaultValue.text}`);
+                        }
                     } else {
                         throw new Error("Untyped property are not supported");
                     }
@@ -131,6 +138,11 @@ export function generate(src: string, filePath: string): string {
                     error(ex.message, n);
                 }
             }
+        }
+        if (defaultValues.length && lastInsertPos > -1) {
+            // build default value function
+            addImport("Δu");
+            insert(` ΔDefault(n) {switch (n) {${defaultValues.join("; ")}}; return Δu;};`, lastInsertPos);
         }
     }
 }
