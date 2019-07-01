@@ -187,6 +187,22 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support ΔD as Data decorator", async function () {
+        assert.equal(generate(`
+            import { xΔD } from "./foobar";
+
+            @xΔD class Foo {
+                sth: string;
+            }
+        `, 'myFile.ts', { symbols: { Data: "xΔD" }, libPrefix: "x" }), `
+            import { xΔD, xΔfStr, xΔp } from "./foobar";
+
+            @xΔD class Foo {
+                ΔΔsth: string; @xΔp(xΔfStr) sth: string;
+            }
+        `, "1");
+    });
+
     it("should support custom validators", function () {
         let logs: any[] = [];
 

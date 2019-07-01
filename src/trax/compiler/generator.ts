@@ -19,7 +19,8 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         ast: null | (TraxImport | DataObject)[],
         traxImport: TraxImport,
         importList: string[] = [], // list of new imports
-        importDict: { [key: string]: 1 };
+        importDict: { [key: string]: 1 },
+        importDictForced: { [key: string]: 1 } = {};
 
     try {
         ast = parse(src, filePath, symbols);
@@ -62,10 +63,13 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         importDict = traxImport.values;
     }
 
-    function addImport(symbol: string) {
-        if (!importDict[symbol]) {
+    function addImport(symbol: string, force = false) {
+        if ((force && !importDictForced[symbol]) || !importDict[symbol]) {
             importDict[symbol] = 1;
             importList.push(symbol);
+            if (force) {
+                importDictForced[symbol] = 1;
+            }
         }
     }
 
@@ -106,7 +110,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
     function processDataObject(n: DataObject) {
         // transform @Data decorator -> @ΔD()
         replace("@" + symbols.Data, getClassDecorator(libPrefix), n.decoPos);
-        addImport(libPrefix + CLASS_DECO);
+        addImport(libPrefix + CLASS_DECO, true);
 
         let len = n.members.length,
             prop: DataProperty,
@@ -157,10 +161,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
     }
 
 
-    function getClassDecorator(libPrefix = "", addImport?: (symbol: string) => void) {
-        if (addImport) {
-            addImport(libPrefix + CLASS_DECO);
-        }
+    function getClassDecorator(libPrefix = "") {
         return "@" + libPrefix + CLASS_DECO;
     }
 
