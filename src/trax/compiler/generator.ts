@@ -5,8 +5,14 @@ const PRIVATE_PREFIX = "ΔΔ",
     CLASS_DECO = "ΔD", RX_LOG = /\/\/\s*trax\:\s*log/,
     RX_NULL_TYPE = /\|\s*null$/;
 
-export function generate(src: string, filePath: string, symbols?: ParserSymbols, libPrefix = ""): string {
-    const SYMBOLS = getSymbols(symbols);
+interface GeneratorOptions {
+    symbols?: ParserSymbols,    // redefine the symbols used to identify Data objects
+    libPrefix?: string;         // define a prefix to use in the generated code
+    validator?: (member: DataMember) => string | null;  // validation function
+}
+
+export function generate(src: string, filePath: string, options?: GeneratorOptions): string {
+    const symbols = getSymbols(options ? options.symbols : undefined), libPrefix = options ? options.libPrefix : "";
 
     let output = src,
         outputShift = 0,
@@ -67,7 +73,7 @@ export function generate(src: string, filePath: string, symbols?: ParserSymbols,
         // must be called at the end as it resets outputShift
 
         outputShift = 0; // to use insert() or replace() from the beginning
-        replace(SYMBOLS.Data, importList.join(", "), traxImport.insertPos - SYMBOLS.Data.length);
+        replace(symbols.Data, importList.join(", "), traxImport.insertPos - symbols.Data.length);
     }
 
     // insert must be called in incremental order - i.e. n+1 calls must have a bigger position 
@@ -99,7 +105,7 @@ export function generate(src: string, filePath: string, symbols?: ParserSymbols,
 
     function processDataObject(n: DataObject) {
         // transform @Data decorator -> @ΔD()
-        replace("@" + SYMBOLS.Data, getClassDecorator(libPrefix), n.decoPos);
+        replace("@" + symbols.Data, getClassDecorator(libPrefix), n.decoPos);
         addImport(libPrefix + CLASS_DECO);
 
         let len = n.members.length,
@@ -130,10 +136,16 @@ export function generate(src: string, filePath: string, symbols?: ParserSymbols,
                             defaultValues.push(`case "${prop.name}": return ${prop.defaultValue.text}`);
                         }
                     } else {
-                        throw new Error("Untyped property are not supported");
+                        error("Untyped property are not supported", n);
                     }
                 } catch (ex) {
                     error(ex.message, n);
+                }
+            }
+            if (options && options.validator) {
+                let errMsg = options.validator(m);
+                if (errMsg) {
+                    error(errMsg, n);
                 }
             }
         }
@@ -150,10 +162,6 @@ export function generate(src: string, filePath: string, symbols?: ParserSymbols,
             addImport(libPrefix + CLASS_DECO);
         }
         return "@" + libPrefix + CLASS_DECO;
-    }
-
-    function getPropertyDefinition(m: DataMember) {
-        return propertyDefinition(m, true);
     }
 
     function propertyDefinition(m: DataMember, includePrivateDefinition = true): string {

@@ -32,8 +32,6 @@ export interface DataProperty extends DataMember {
     type: DataType | undefined;
     shallowRef: boolean;
     defaultValue: CodeFragment | undefined;
-    // getter: xxx - tbd: shall we support getter functions?
-    // setter: xxx - tbd: shall we support setter functions?
 }
 
 export interface ComputedProperty {

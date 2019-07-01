@@ -1,6 +1,7 @@
 // trax:ignore
 import * as assert from 'assert';
 import { generate } from '../../trax/compiler/generator';
+import { DataMember } from '../../trax/compiler/types';
 
 describe('Generator', () => {
 
@@ -173,7 +174,7 @@ describe('Generator', () => {
             @MyData class Bar {
                 theFoo: Foo = new Foo();
             }
-        `, 'myFile.ts', { Data: "MyData", ref: "myRef" }, "x"), `
+        `, 'myFile.ts', { symbols: { Data: "MyData", ref: "myRef" }, libPrefix: "x" }), `
             import { xΔD, xΔfStr, xΔp, xΔf, xΔu } from "./foobar";
 
             @xΔD class Foo {
@@ -186,6 +187,56 @@ describe('Generator', () => {
         `, "1");
     });
 
-    // todo export property generator
+    it("should support custom validators", function () {
+        let logs: any[] = [];
+
+        function validate(m: DataMember) {
+            logs.push([m.name, m.type ? m.type.kind : "", m.defaultValue ? m.defaultValue.text : ""]);
+            return null;
+        }
+
+        generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                sth: string[];
+            }
+
+            @Data class Bar {
+                theFoo: Foo = new Foo();
+            }
+        `, 'myFile.ts', { validator: validate });
+
+        assert.deepEqual(logs, [
+            ["sth", "array", ""],
+            ["theFoo", "reference", "new Foo()"]
+        ], "logs");
+
+        const RX_LIST = /List$/;
+        function listValidator(m: DataMember) {
+            if (m && m.type && m.type.kind === "array") {
+                if (!m.name.match(RX_LIST)) {
+                    return "Array properties should use the List suffix, e.g. " + m.name + "List";
+                }
+            }
+            return null;
+        }
+
+        let errMsg = "";
+        try {
+            generate(`
+                import { Data } from "./trax";
+    
+                @Data class Foo {
+                    sth: string[];
+                }
+            `, 'myFile.ts', { validator: listValidator });
+        } catch (ex) {
+            errMsg = ex.message;
+        }
+        // TODO: cleanup error message
+        assert.equal(errMsg, "[TRAX]Error: [TRAX]Array properties should use the List suffix, e.g. sthList - file: myFile.ts - file: myFile.ts", "validation error");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });
