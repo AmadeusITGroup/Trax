@@ -1,13 +1,31 @@
 import { TraxImport, DataObject, DataProperty, DataType } from './types';
 import * as ts from "typescript";
 
-const DATA = "Data",
-    LOG = "log",
-    REF = "ref",
-    RX_IGNORE_COMMENT = /\/\/\s*trax:ignore/i,
-    RX_FILE = /\@Data/;
+const LOG = "log",
+    RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i;
 
-export function parse(src: string, filePath: string): (TraxImport | DataObject)[] | null {
+export interface ParserSymbols {
+    Data?: string;
+    ref?: string;
+    computed?: string;
+}
+
+export function getSymbols(symbols?: ParserSymbols) {
+    const Data = "Data", ref = "ref", computed = "computed";
+    if (!symbols) {
+        return { Data, ref, computed };
+    } else {
+        return {
+            Data: symbols.Data || Data,
+            ref: symbols.ref || ref,
+            computed: symbols.computed || computed
+        };
+    }
+}
+
+
+export function parse(src: string, filePath: string, symbols?: ParserSymbols): (TraxImport | DataObject)[] | null {
+    const SYMBOLS = getSymbols(symbols);
     if (!isTraxFile(src)) return null;
 
     let srcFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, /*setParentNodes */ true);
@@ -55,7 +73,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
     }
 
     function isTraxFile(source: string): boolean {
-        return (!source.match(RX_IGNORE_COMMENT) && source.match(RX_FILE) !== null);
+        return (!source.match(RX_IGNORE_COMMENT) && source.indexOf("@" + SYMBOLS.Data) > -1);
     }
 
     function processImport(node: ts.ImportClause) {
@@ -65,7 +83,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
             if (nmi.elements) {
                 let idx = nmi.elements.length, traxImport: TraxImport | undefined;
                 while (idx--) {
-                    if (nmi.elements[idx].name.text === DATA) {
+                    if (nmi.elements[idx].name.text === SYMBOLS.Data) {
                         traxImport = {
                             kind: "import",
                             insertPos: nmi.elements[idx].end,
@@ -93,7 +111,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
             while (idx--) {
                 d = decorators[idx];
                 if (d.expression.kind === ts.SyntaxKind.Identifier) {
-                    if (d.expression.getText() === DATA) {
+                    if (d.expression.getText() === SYMBOLS.Data) {
                         isData = true;
                         decoPos = d.expression.pos - 1;
                         // comment the dataset expression to remove it from generated code (and don't impact line numbers)
@@ -156,8 +174,14 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
                         if (tp) {
                             prop.type = tp;
                         } else if (!handleDefaultValue(c, prop) && c.kind !== ts.SyntaxKind.Decorator) {
-                            if (c.kind !== ts.SyntaxKind.Parameter && c.getText() !== "any") {
-                                // console.log(c);
+                            if (c.kind === ts.SyntaxKind.CallExpression || c.kind === ts.SyntaxKind.NewExpression) {
+                                prop.defaultValue = {
+                                    pos: c.pos,
+                                    end: c.end,
+                                    text: c.getText()
+                                }
+                            } else if (c.kind !== ts.SyntaxKind.Parameter && c.getText() !== "any") {
+                                // console.log(c.getText(), c);
                                 error("Unsupported syntax", c);
                             }
                         }
@@ -182,7 +206,7 @@ export function parse(src: string, filePath: string): (TraxImport | DataObject)[
             while (idx--) {
                 d = decorators[idx];
                 let e = d.expression;
-                if (e.getText() === REF) return true
+                if (e.getText() === SYMBOLS.ref) return true
             }
         }
         return false;

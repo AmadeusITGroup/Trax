@@ -565,5 +565,60 @@ describe('Parser', () => {
         }], "1");
     });
 
+    it("should parse new and function call default values", async function () {
+        let r = parse(`\
+            import { Data } from "./trax";
+            @Data class Foo {
+                bar = init(123);
+                baz:Bar = new Bar("abc");
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            "insertPos": 25,
+            "kind": "import",
+            "values": {
+                "Data": 1
+            }
+        }, {
+            "className": "Foo",
+            "classNameEnd": 70,
+            "decoPos": 55,
+            "kind": "data",
+            "log": false,
+            "members": [{
+                "defaultValue": {
+                    "end": 104,
+                    "pos": 94,
+                    "text": "init(123)"
+                },
+                "end": 105,
+                "kind": "property",
+                "name": "bar",
+                "namePos": 89,
+                "shallowRef": false,
+                "type": {
+                    "kind": "any"
+                }
+            }, {
+                "defaultValue": {
+                    "end": 146,
+                    "pos": 131,
+                    "text": "new Bar(\"abc\")"
+                },
+                "end": 147,
+                "kind": "property",
+                "name": "baz",
+                "namePos": 122,
+                "shallowRef": false,
+                "type": {
+                    "identifier": "Bar",
+                    "kind": "reference"
+                }
+            }],
+            "pos": 42
+        }]);
+    });
+
     // todo parse @computed
 });

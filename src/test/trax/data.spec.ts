@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { TestNode, SubTestNode, SimpleNode, AnyNode } from "./fixture";
+import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2 } from "./fixture";
 import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data } from '../../trax';
 
 describe('Data objects', () => {
@@ -378,6 +378,25 @@ describe('Data objects', () => {
         assert.equal(d.prop2, null, "2");
         assert.equal(d.prop3, undefined, "3");
         assert.equal(d.prop4, undefined, "4");
+    });
+
+    it("should support property initialization through function calls and new statements", async function () {
+        let n = new TestNode2();
+
+        assert.equal(n.value, "v42", "value");
+        assert.equal(n.bar.v, "Xthe_barX", "bar.v");
+
+        assert.equal(isMutating(n), false, "not mutating");
+
+        n.value = 'another value';
+        assert.equal(isMutating(n), true, "now mutating");
+
+        await changeComplete(n);
+        assert.equal(isMutating(n), false, "not mutating (2)");
+
+        let n2 = new TestNode2();;
+        assert.equal(n.value, "another value", "n value");
+        assert.equal(n2.value, "v42", "n2 value");
     });
 
 });

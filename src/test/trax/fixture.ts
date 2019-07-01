@@ -10,6 +10,22 @@ import { Data } from '../../trax';
     node2: TestNode | null;    // null by default (not auto created)
 }
 
+function init(nbr) {
+    return "v" + nbr;
+}
+class Bar {
+    v: string;
+    constructor(val: string) {
+        this.v = "X" + val + "X";
+    }
+}
+
+@Data export class TestNode2 {
+    value = init("42");
+    bar = new Bar("the_bar");
+}
+
+
 @Data export class SimpleNode {
     value: string;
     quantity: number;

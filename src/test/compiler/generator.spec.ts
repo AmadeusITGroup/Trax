@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate, getPropertyDefinition, getClassDecorator } from '../../trax/compiler/generator';
+import { generate } from '../../trax/compiler/generator';
 
 describe('Generator', () => {
 
@@ -162,37 +162,28 @@ describe('Generator', () => {
         `, "1");
     });
 
-    it("should allow to generate any property individually", async function () {
-        assert.equal(getPropertyDefinition({ name: "foo" }),
-            "ΔΔfoo: any; @Δp() foo: any;",
-            "1");
+    it("should support different symbols and generation prefixes", async function () {
+        assert.equal(generate(`
+            import { MyData } from "./foobar";
 
-        assert.equal(getPropertyDefinition({ name: "foo", type: { kind: "string" } }, "x."),
-            "ΔΔfoo: string; @x.Δp(x.ΔfStr) foo: string;",
-            "2");
+            @MyData class Foo {
+                sth: string;
+            }
 
-        let imports = {}
-        function addImport(symbol) {
-            imports[symbol] = 1;
-        }
+            @MyData class Bar {
+                theFoo: Foo = new Foo();
+            }
+        `, 'myFile.ts', { Data: "MyData", ref: "myRef" }, "x"), `
+            import { xΔD, xΔfStr, xΔp, xΔf, xΔu } from "./foobar";
 
-        assert.equal(getPropertyDefinition({ name: "bar", type: { kind: "array", itemType: { kind: "reference", identifier: "Bar" } } }, "xxx", addImport),
-            "ΔΔbar: Bar[]; @xxxΔp(xxxΔlf(xxxΔf(Bar))) bar: Bar[];",
-            "3");
+            @xΔD class Foo {
+                ΔΔsth: string; @xΔp(xΔfStr) sth: string;
+            }
 
-        assert.deepEqual(imports, {
-            "xxxΔf": 1, "xxxΔlf": 1, "xxxΔp": 1
-        }, "4");
-    });
-
-    it("should allow to generate class decorator individually", async function () {
-        let imports = {}
-        function addImport(symbol) {
-            imports[symbol] = 1;
-        }
-
-        assert.equal(getClassDecorator("xxx", addImport), "@xxxΔD", "1");
-        assert.deepEqual(imports, { "xxxΔD": 1 }, "2");
+            @xΔD class Bar {
+                ΔΔtheFoo: Foo = new Foo(); @xΔp(xΔf(Foo)) theFoo: Foo; ΔDefault(n) {switch (n) {case "theFoo": return new Foo()}; return xΔu;};
+            }
+        `, "1");
     });
 
     // todo export property generator
