@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { TestNode } from "./fixture";
-import { isMutating, changeComplete, version, Data, create, reset, hasProperty } from '../../trax';
+import { TestNode, TestList } from "./fixture";
+import { isMutating, changeComplete, version, Data, create, reset, hasProperty, track, untrack } from '../../trax';
 
 describe('Trax utilities', () => {
 
@@ -27,7 +27,7 @@ describe('Trax utilities', () => {
         assert.equal(version(n), 3, "version moved to 3");
     });
 
-    it('should allow to create an object even if it can be undefined or null', async function () {
+    it('should allow to create an object property even if it can be undefined or null', async function () {
         @Data class TestData {
             prop?: number;
             node?: TestNode;
@@ -114,6 +114,78 @@ describe('Trax utilities', () => {
         assert.equal(hasProperty("", "foo"), false, "8");
         assert.equal(hasProperty(null, "foo"), false, "9");
         assert.equal(hasProperty(n, "foo"), false, "10");
+    });
+
+    it("should allow to synchronously track/untrack the changes occurring on an object", function () {
+        let n = new TestNode(), logs: any[] = [];
+
+        let f = track(n, function (o: any, operation, propName, oldVal, newVal) {
+            logs.push([o === n, operation, propName, oldVal, newVal])
+        });
+
+        let v = n.node.value;
+
+        // default node was created, but not considered as a change
+        assert.deepEqual(logs, [], "1");
+
+        n.node.value = "v2";
+        assert.deepEqual(logs, [], "2"); // parent not directly changed (so no track notification)
+
+        n.value = "v3";
+        assert.deepEqual(logs, [
+            [true, "set", "value", "v1", "v3"]
+        ], "3");
+
+        logs = [];
+        let n1 = n.node, n2 = new TestNode();
+        n.node = n2;
+        assert.deepEqual(logs, [
+            [true, "set", "node", n1, n2]
+        ], "4");
+
+        logs = [];
+        untrack(n, f!);
+        n.value = "v5";
+        assert.deepEqual(logs, [], "5");
+    });
+
+    it("should allow to synchronously track/untrack the changes occurring on a list", function () {
+        let n = new TestList(), logs: any[] = [];
+
+        let f = track(n.list, function (o: any, operation, propName, oldVal, newVal) {
+            if (propName !== undefined) {
+                logs.push([o === n.list, operation, propName, oldVal ? oldVal.value : oldVal, newVal ? newVal.value : newVal]);
+            } else {
+                logs.push([o === n.list, operation]);
+            }
+        });
+
+        let n0 = n.list[0] = new TestNode();
+        n0.value = "v0";
+
+        assert.deepEqual(logs, [
+            [true, "set", 0, undefined, "v1"]
+        ], "1");
+
+        logs = [];
+        let n1 = new TestNode();
+        n1.value = "v2";
+        n.list.push(n1);
+
+        n.list[0] = new TestNode();
+
+        assert.deepEqual(logs, [
+            [true, "set", 1, undefined, "v2"],
+            [true, "set", 0, "v0", "v1"]
+        ], "2");
+
+        logs = [];
+        n.list.splice(0, 1);
+
+        assert.deepEqual(logs, [
+            [true, "splice"]
+        ], "3");
+
     });
 
 });

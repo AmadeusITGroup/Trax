@@ -4,6 +4,7 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_FACTORY = "ΔFactory",
     MP_DEFAULT_FACTORIES = "ΔDefFactories",
     MP_IS_FACTORY = "ΔIsFactory",
+    MP_PROXY = "ΔΔProxy",
     MP_IS_PROXY = "ΔIsProxy",
     MP_DEFAULT = "ΔDefault",
     MP_CREATE_PROXY = "ΔCreateProxy";
@@ -20,6 +21,7 @@ export interface TraxMetaData {
     parents: FlexArray<TraxObject>;
     refreshCtxt?: RefreshContext;
     watchers?: FlexArray<WatchFunction>;      // list of watchers associated to a DataNode instance
+    trackers?: FlexArray<TrackFunction>;
 }
 
 export interface Constructor<T> {
@@ -47,7 +49,7 @@ function initMetaData(o: TraxObject): TraxMetaData | null {
 // -----------------------------------------------------------------------------------------------------------------------------
 // Soft Array functions
 
-// The purpose of FlexArray is to avoid the creation of an Array in cases where we don't need it (here in 95% of cases)
+// The purpose of FlexArray is to avoid the creation of an Array when we don't need it in most cases (here in 95% of cases)
 type FlexArray<T> = T | T[] | undefined;
 
 const $isArray = Array.isArray;
@@ -174,6 +176,7 @@ export function commitChanges(o: any /*TraxObject*/, forceNewRefreshContext = fa
 }
 
 type WatchFunction = (o: TraxObject) => void;
+type TrackFunction = (o: TraxObject, operation: string, property?: string | number, previousValue?: any, newValue?: any) => void;
 
 /**
  * Watch all changes associated to a data node instance
@@ -216,6 +219,34 @@ export function numberOfWatchers(o: any): number {
 }
 
 /**
+ * Start tracking an object. The track function will be called synchronously when a new value is set in one
+ * of the object property. Note that sub-object properties will not be tracked (on the contrary to watch)
+ * @param o 
+ * @param fn 
+ */
+export function track(o: any, fn: TrackFunction): TrackFunction | null {
+    let md = initMetaData(o);
+    if (md && fn) {
+        md.trackers = FA_addItem(md.trackers, fn);
+    } else {
+        return null;
+    }
+    return fn;
+}
+
+/**
+ * Stop tracking an object
+ * @param o 
+ * @param trackFn 
+ */
+export function untrack(o: any, trackFn: TrackFunction) {
+    let md = o ? (o as TraxObject).ΔMd : undefined;
+    if (md && trackFn) {
+        md.trackers = FA_removeItem(md.trackers, trackFn);
+    }
+}
+
+/**
  * Force the creation of a property instance even if it can be null or undefined
  * @param o a Data Object
  * @param propName the property name
@@ -249,7 +280,6 @@ export function reset(o: any, propName: string): any {
             }
         }
 
-        // using a global variable is quite ugly, but still the best option to avoid making all data node instances heavier
         let factories = o[MP_DEFAULT_FACTORIES], f = factories ? factories[propName] : null;
         if (f) {
             return o[propName] = f();
@@ -303,7 +333,7 @@ export function Δp<T>(factory?: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3) {
 
         addPropertyInfo(proto, key, false, {
             get: function () { return ΔGet(<any>this, ΔΔKey, key, factory!, canBeNullOrUndefined); },
-            set: function (v) { ΔSet(<any>this, ΔΔKey, v, factory!, <any>this); },
+            set: function (v) { ΔSet(<any>this, key, ΔΔKey, v, factory!, <any>this); },
             enumerable: true,
             configurable: true
         });
@@ -474,13 +504,14 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
 
 /**
  * Internal property setter function
- * @param obj the DataNode on which to set the property
- * @param $$propName the name or index of the property (should start with "$$" - e.g. "$$value")
+ * @param o the DataNode on which to set the property
+ * @param propName the name or index of the property 
+ * @param ΔΔpropName the name or index of the property (should start with "ΔΔ" - e.g. "ΔΔvalue")
  * @param newValue the new property value (will be compared to current value)
  * @param cf [optional] the constructor or factory associated with the property Object
  * @param propHolder the name of the property holding all properties (e.g. for DatList) - optional
  */
-export function ΔSet<T>(obj: TraxObject, ΔΔPropName: string | number, newValue: any, factory: Factory<T>, propHolder: any) {
+function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string | number, newValue: any, factory: Factory<T>, propHolder: any) {
     let isTraxValue = isDataObject(newValue);
 
     if (newValue && !isTraxValue && factory.ΔCreateProxy) {
@@ -489,12 +520,12 @@ export function ΔSet<T>(obj: TraxObject, ΔΔPropName: string | number, newValu
     }
 
     let updateVal = false, currentValue = propHolder[ΔΔPropName];
-    if (isMutating(obj)) {
+    if (isMutating(o)) {
         // object has already been changed
-        updateVal = true;
+        updateVal = (currentValue !== newValue);
     } else {
         if (currentValue !== newValue) {
-            touch(obj);
+            touch(o);
             updateVal = true;
         }
     }
@@ -505,9 +536,22 @@ export function ΔSet<T>(obj: TraxObject, ΔΔPropName: string | number, newValu
         }
 
         if (isTraxValue || (currentValue && isDataObject(currentValue))) {
-            updateSubDataRefs(obj, currentValue, newValue as TraxObject);
+            updateSubDataRefs(o, currentValue, newValue as TraxObject);
         }
         propHolder[ΔΔPropName] = newValue;
+
+        // notify trackers
+        notifyTrackers(o as TraxObject, "set", propName, currentValue, newValue);
+    }
+}
+
+function notifyTrackers(o: TraxObject, operation: string, propName?: string | number, currentValue?: any, newValue?: any) {
+    let md = o ? o.ΔMd : undefined;
+    if (md && md.trackers) {
+        let o2 = o[MP_PROXY] || o; // if o is connected to a proxy, we return the proxy - cf. lists
+        FA_forEach(md.trackers, function (fn: TrackFunction) {
+            fn(o2, operation, propName, currentValue, newValue);
+        });
     }
 }
 
@@ -720,7 +764,8 @@ class TraxList<T> implements TraxObject {
     ΔChangeVersion = 0;
     ΔMd: TraxMetaData | undefined = undefined;
     ΔΔList: any[];            // the actual Array that is behind the Proxy
-    ΔΔSelf = this;
+    ΔΔSelf = this;            // reference to the object behind the proxy
+    ΔΔProxy: any;             // the proxy object - cf. MP_PROXY
     ΔIsProxy = false;
     ΔItemFactory: Factory<T>;
     // $computeDependencies: any;           // object set during the processing of a computed property - undefined otherwise
@@ -731,7 +776,9 @@ class TraxList<T> implements TraxObject {
     }
 
     static ΔNewProxy<T>(itemFactory: Factory<T>) {
-        return new Proxy([], new TraxList(itemFactory));
+        let p = new Proxy([], new TraxList(itemFactory));
+        p[MP_PROXY] = p;
+        return p;
     }
 
     /**
@@ -760,7 +807,7 @@ class TraxList<T> implements TraxObject {
             index = this.ΔΔList.length;
         }
         if (index > -1) {
-            ΔSet(this.ΔΔSelf, index, itm, this.ΔItemFactory, this.ΔΔList);
+            ΔSet(this.ΔΔSelf, index, index, itm, this.ΔItemFactory, this.ΔΔList);
         }
         return itm;
     }
@@ -794,7 +841,8 @@ class TraxList<T> implements TraxObject {
         }
         if (prop.match(RX_INT)) {
             // prop is an integer
-            ΔSet(this.ΔΔSelf, parseInt(prop, 10), value, this.ΔItemFactory, this.ΔΔList);
+            let idx = parseInt(prop, 10);
+            ΔSet(this.ΔΔSelf, idx, idx, value, this.ΔItemFactory, this.ΔΔList);
         } else if (prop.match(RX_TRAX_PROP)) {
             // prop starts with a $
             this[prop] = value;
@@ -855,6 +903,7 @@ class TraxList<T> implements TraxObject {
                         for (let i = 0; items.length > i; i++) {
                             ΔConnectChildToParent(self, items[i]);
                         }
+                        notifyTrackers(this, prop);
                     }
                     return result;
                 }
