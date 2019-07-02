@@ -371,6 +371,7 @@ describe('Data objects', () => {
             prop2: string | null;
             prop3?: string | null | undefined;
             prop4: string | null | undefined;
+            prop5?: any;
         }
         let d = new TestData();
         assert.equal(d.prop0, "", "0");
@@ -378,6 +379,7 @@ describe('Data objects', () => {
         assert.equal(d.prop2, null, "2");
         assert.equal(d.prop3, undefined, "3");
         assert.equal(d.prop4, undefined, "4");
+        assert.equal(d.prop5, undefined, "5");
     });
 
     it("should support property initialization through function calls and new statements", async function () {

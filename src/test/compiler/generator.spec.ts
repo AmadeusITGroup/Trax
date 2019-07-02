@@ -95,6 +95,7 @@ describe('Generator', () => {
                 street?: string
                 bar: Bar[] | undefined | null;
                 baz?: Bar[][];
+                foo?;
             }
         `, 'myFile.ts'), `
             import { ΔD, ΔfStr, Δp, Δf, Δlf } from "./trax";
@@ -103,6 +104,7 @@ describe('Generator', () => {
                 ΔΔstreet?: string; @Δp(ΔfStr, 2) street?: string;
                 ΔΔbar: Bar[] | undefined | null; @Δp(Δlf(Δf(Bar)), 3) bar?: Bar[] | null;
                 ΔΔbaz?: Bar[][]; @Δp(Δlf(Δlf(Δf(Bar))), 2) baz?: Bar[][];
+                ΔΔfoo?; @Δp(0, 2) foo?: any;
             }
         `, "1");
     });
