@@ -244,7 +244,7 @@ describe('Generator', () => {
         try {
             generate(`
                 import { Data } from "./trax";
-    
+
                 @Data class Foo {
                     sth: string[];
                 }
@@ -254,6 +254,21 @@ describe('Generator', () => {
         }
         // TODO: cleanup error message
         assert.equal(errMsg, "[TRAX]Error: [TRAX]Array properties should use the List suffix, e.g. sthList - file: myFile.ts - file: myFile.ts", "validation error");
+
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                optionList: string[];
+            }
+        `, 'myFile.ts', { validator: listValidator }), `
+            import { ΔD, ΔfStr, Δlf, Δp } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔoptionList: string[]; @Δp(Δlf(ΔfStr)) optionList: string[];
+            }
+        `, "1");
+
     });
 
     // todo support import Data from "./trax" -> default import ?;
