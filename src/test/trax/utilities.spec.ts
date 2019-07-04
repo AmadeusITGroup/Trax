@@ -32,6 +32,7 @@ describe('Trax utilities', () => {
             prop?: number;
             node?: TestNode;
             value: string | null;
+            list?: TestNode[];
         }
         let d = new TestData(), v: any;
         assert.equal(d.prop, undefined, "initial prop is undefined");
@@ -49,6 +50,16 @@ describe('Trax utilities', () => {
         v = create(d, "value");
         assert.equal(v, "", "empty string created");
         assert.equal(d.value, v, "d.value === v");
+
+        assert.equal(d.list, undefined, "list is undefined");
+        let list = create(d, "list");
+        assert.equal(list.length, 0, "empty list created");
+        assert.equal(list, d.list, "d.list === list");
+
+        assert.equal(list[0], undefined, "list[0] is undefined");
+        let item = create(list, 0);
+        assert.equal(item.value, "v1", "item has been created");
+        assert.equal(list[0], item, "list[0] === item");
     });
 
     it("should allow to reset a property to its default value", function () {
