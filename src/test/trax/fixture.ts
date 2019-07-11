@@ -1,4 +1,6 @@
-import { Data } from '../../trax';
+import { Data, computed } from '../../trax';
+
+export let processLengthCounter = 0;
 
 /**
  * TestNode 
@@ -55,11 +57,11 @@ class Bar {
     name = "no name";
     list: (TestNode | null)[];
 
-    // @computed() get listLength() {
-    //     processLengthCounter++;
-    //     if (!this.list) return 0;
-    //     return this.list.length;
-    // }
+    @computed get listLength() {
+        processLengthCounter++;
+        if (!this.list) return 0;
+        return this.list.length;
+    }
 }
 
 export function initNewArrTestNode(): ArrTestNode {
