@@ -12,7 +12,8 @@ export interface ParserSymbols {
 
 export interface ParserOptions {
     symbols?: ParserSymbols;
-    acceptMethods?: boolean;
+    acceptMethods?: boolean; // default: false
+    ignoreFunctionProperties?: boolean; // default: false
 }
 
 export function getSymbols(symbols?: ParserSymbols) {
@@ -29,7 +30,7 @@ export function getSymbols(symbols?: ParserSymbols) {
 }
 
 export function parse(src: string, filePath: string, options?: ParserOptions): (TraxImport | DataObject)[] | null {
-    const SYMBOLS = getSymbols(options? options.symbols : undefined);
+    const SYMBOLS = getSymbols(options ? options.symbols : undefined);
     if (!isTraxFile(src)) return null;
 
     let srcFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, /*setParentNodes */ true);
@@ -174,7 +175,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                     shallowRef: hasRefDecorator(m),
                     type: undefined,
                     defaultValue: undefined
-                };
+                }, skipProperty = false;
 
                 m.forEachChild((c) => {
                     if (c.kind === ts.SyntaxKind.Identifier) {
@@ -193,6 +194,12 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                                     end: c.end,
                                     text: c.getText()
                                 }
+                            } else if (c.kind === ts.SyntaxKind.FunctionType) {
+                                if (options && options.ignoreFunctionProperties) {
+                                    skipProperty = true;
+                                } else {
+                                    error("Function properties are not supported in this context", c);
+                                }
                             } else if (c.kind !== ts.SyntaxKind.Parameter && c.getText() !== "any") {
                                 // console.log(c.getText(), c);
                                 error("Unsupported syntax", c);
@@ -206,7 +213,9 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 if (canBeUndefined) {
                     prop.type.canBeUndefined = true;
                 }
-                obj.members.push(prop);
+                if (!skipProperty) {
+                    obj.members.push(prop);
+                }
             }
         }
 
@@ -247,6 +256,8 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 return { kind: "boolean" }
             } else if (n.kind === ts.SyntaxKind.NumberKeyword) {
                 return { kind: "number" }
+            } else if (n.getText() === "Function") {
+                return { kind: "any" }
             } else if (n.kind === ts.SyntaxKind.TypeReference) {
                 return {
                     kind: "reference",

@@ -309,16 +309,38 @@ describe('Generator', () => {
                     this.bar = x;
                 }
             }
-        `, 'myFile.ts', { symbols: { Data: "MyData" }, acceptMethods: true, replaceDataDecorator: false }), `
-            import { MyData, Δlf, Δp } from "./trax";
+        `, 'myFile.ts', { symbols: { Data: "MyData" }, acceptMethods: true, replaceDataDecorator: false, libPrefix: "x" }), `
+            import { MyData, xΔlf, xΔp } from "./trax";
 
             @MyData class Address {
-                ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
-                ΔΔbar; @Δp() bar: any;
+                ΔΔstreets: any[]; @xΔp(xΔlf()) streets: any[];
+                ΔΔbar; @xΔp() bar: any;
 
                 doSomething(x) {
                     this.bar = x;
                 }
+            }
+        `, "1");
+    });
+
+    it("should avoid ignore function properties if specified in options", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                streets: any[]
+                bar: Function;
+                baz: () => void;
+                foo: (x, y:string)=>number;
+            }
+        `, 'myFile.ts', { ignoreFunctionProperties: true }), `
+            import { ΔD, Δlf, Δp } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
+                ΔΔbar: Function; @Δp() bar: any;
+                baz: () => void;
+                foo: (x, y:string)=>number;
             }
         `, "1");
     });

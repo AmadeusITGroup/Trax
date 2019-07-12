@@ -7,6 +7,7 @@ const PRIVATE_PREFIX = "ΔΔ",
 
 interface GeneratorOptions {
     acceptMethods?: boolean;           // default:false
+    ignoreFunctionProperties?: boolean;// default:false
     replaceDataDecorator?: boolean;    // default:true
     symbols?: ParserSymbols,           // redefine the symbols used to identify Data objects
     libPrefix?: string;                // define a prefix to use in the generated code
@@ -25,7 +26,11 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         importDictForced: { [key: string]: 1 } = {};
 
     try {
-        ast = parse(src, filePath, { symbols, acceptMethods: options ? options.acceptMethods : false });
+        ast = parse(src, filePath, {
+            symbols,
+            acceptMethods: options ? options.acceptMethods : false,
+            ignoreFunctionProperties: options ? options.ignoreFunctionProperties : false
+        });
         if (ast && ast.length) {
             initImports(ast);
 
@@ -115,7 +120,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
             replace("@" + symbols.Data, getClassDecorator(libPrefix), n.decoPos);
             addImport(libPrefix + CLASS_DECO, true);
         } else {
-            addImport(libPrefix + symbols.Data, true);
+            addImport(symbols.Data, true);
         }
 
         let len = n.members.length,
