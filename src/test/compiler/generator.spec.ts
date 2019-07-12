@@ -271,5 +271,31 @@ describe('Generator', () => {
 
     });
 
+    it("should accept methods if specified in options", async function () {
+        assert.equal(generate(`
+            import { MyData } from "./trax";
+
+            @MyData class Address {
+                streets: any[]
+                bar;
+
+                doSomething(x) {
+                    this.bar = x;
+                }
+            }
+        `, 'myFile.ts', { symbols: { Data: "MyData" }, acceptMethods: true }), `
+            import { ΔD, Δlf, Δp } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
+                ΔΔbar; @Δp() bar: any;
+
+                doSomething(x) {
+                    this.bar = x;
+                }
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });

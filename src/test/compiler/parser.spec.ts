@@ -666,4 +666,50 @@ describe('Parser', () => {
         }
         ]);
     });
+
+    it("should accept methods if specified in options", async function () {
+        let r = parse(`\
+            import { Data } from "./trax";
+            @Data class Foo {
+                list?: TestNode[];
+                foo() {
+                    bar(this);
+                }
+            }
+        `, "file1.ts", { acceptMethods: true });
+
+        assert.deepEqual(r, [{
+            "insertPos": 25,
+            "kind": "import",
+            "values": {
+                "Data": 1
+            }
+        }, {
+            "className": "Foo",
+            "classNameEnd": 70,
+            "decoPos": 55,
+            "kind": "data",
+            "log": false,
+            "members": [
+                {
+                    "defaultValue": undefined,
+                    "end": 107,
+                    "kind": "property",
+                    "name": "list",
+                    "namePos": 89,
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "array",
+                        "canBeUndefined": true,
+                        "itemType": {
+                            "identifier": "TestNode",
+                            "kind": "reference",
+                        }
+                    }
+                }
+            ],
+            "pos": 42
+        }
+        ]);
+    });
 });

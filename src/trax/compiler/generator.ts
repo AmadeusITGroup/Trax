@@ -6,6 +6,7 @@ const PRIVATE_PREFIX = "ΔΔ",
     RX_NULL_TYPE = /\|\s*null$/;
 
 interface GeneratorOptions {
+    acceptMethods?: boolean;
     symbols?: ParserSymbols,    // redefine the symbols used to identify Data objects
     libPrefix?: string;         // define a prefix to use in the generated code
     validator?: (member: DataMember) => string | null;  // validation function
@@ -23,7 +24,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         importDictForced: { [key: string]: 1 } = {};
 
     try {
-        ast = parse(src, filePath, symbols);
+        ast = parse(src, filePath, { symbols, acceptMethods: options ? options.acceptMethods : false });
         if (ast && ast.length) {
             initImports(ast);
 
@@ -56,7 +57,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
 
     function initImports(ast: (TraxImport | DataObject)[]) {
         if (ast[0].kind !== "import") {
-            error("@Data import not found", null);
+            error("@" + symbols.Data + " import not found", null);
             return; // not reachable as error throws
         }
         traxImport = ast[0] as TraxImport;

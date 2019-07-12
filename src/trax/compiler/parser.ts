@@ -10,6 +10,11 @@ export interface ParserSymbols {
     computed?: string;
 }
 
+export interface ParserOptions {
+    symbols?: ParserSymbols;
+    acceptMethods?: boolean;
+}
+
 export function getSymbols(symbols?: ParserSymbols) {
     const Data = "Data", ref = "ref", computed = "computed";
     if (!symbols) {
@@ -23,9 +28,8 @@ export function getSymbols(symbols?: ParserSymbols) {
     }
 }
 
-
-export function parse(src: string, filePath: string, symbols?: ParserSymbols): (TraxImport | DataObject)[] | null {
-    const SYMBOLS = getSymbols(symbols);
+export function parse(src: string, filePath: string, options?: ParserOptions): (TraxImport | DataObject)[] | null {
+    const SYMBOLS = getSymbols(options? options.symbols : undefined);
     if (!isTraxFile(src)) return null;
 
     let srcFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, /*setParentNodes */ true);
@@ -154,6 +158,9 @@ export function parse(src: string, filePath: string, symbols?: ParserSymbols): (
                         if (m.decorators[0].getText() === "@computed") continue;
                     }
                     error("Unsupported Data accessor", m);
+                } else if (m.kind === ts.SyntaxKind.MethodDeclaration) {
+                    if (options && options.acceptMethods) continue;
+                    error("Methods cannot be defined in this object", m);
                 } else if (m.kind !== ts.SyntaxKind.PropertyDeclaration) {
                     error("Invalid Data object member [kind: " + m.kind + "]", m);
                 }
