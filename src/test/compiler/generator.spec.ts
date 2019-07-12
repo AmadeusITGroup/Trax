@@ -297,5 +297,31 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should avoid changing the Data decorator if specified in options", async function () {
+        assert.equal(generate(`
+            import { MyData } from "./trax";
+
+            @MyData class Address {
+                streets: any[]
+                bar;
+
+                doSomething(x) {
+                    this.bar = x;
+                }
+            }
+        `, 'myFile.ts', { symbols: { Data: "MyData" }, acceptMethods: true, replaceDataDecorator: false }), `
+            import { MyData, Δlf, Δp } from "./trax";
+
+            @MyData class Address {
+                ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
+                ΔΔbar; @Δp() bar: any;
+
+                doSomething(x) {
+                    this.bar = x;
+                }
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });
