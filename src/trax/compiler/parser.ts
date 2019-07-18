@@ -13,6 +13,7 @@ export interface ParserSymbols {
 export interface ParserOptions {
     symbols?: ParserSymbols;
     acceptMethods?: boolean; // default: false
+    interfaceTypes?: string[];
     ignoreFunctionProperties?: boolean; // default: false
 }
 
@@ -259,6 +260,10 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
             } else if (n.getText() === "Function") {
                 return { kind: "any" }
             } else if (n.kind === ts.SyntaxKind.TypeReference) {
+                if (options && options.interfaceTypes
+                    && options.interfaceTypes.indexOf(n.getText()) > -1) {
+                    return { kind: "any" }
+                }
                 return {
                     kind: "reference",
                     identifier: n.getText()

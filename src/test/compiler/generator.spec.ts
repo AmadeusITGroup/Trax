@@ -345,5 +345,23 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support optional interfaceTypes declaration", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Address {
+                street: string | null;
+                $content: IvContent;
+            }
+        `, 'myFile.ts', { interfaceTypes: ["IvContent"] }), `
+            import { ΔD, ΔfStr, Δp } from "./trax";
+
+            @ΔD class Address {
+                ΔΔstreet: string | null; @Δp(ΔfStr, 1) street: string | null;
+                ΔΔ$content: IvContent; @Δp() $content: any;
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });
