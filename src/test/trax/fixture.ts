@@ -22,11 +22,18 @@ class Bar {
     }
 }
 
+let count = 0;
+
+export function resetCount() {
+    count = 0;
+}
+
 @Data export class TestNode2 {
     value = init("42");
     bar = new Bar("the_bar");
+    quantity = -1;
+    count = count++;
 }
-
 
 @Data export class SimpleNode {
     value: string;

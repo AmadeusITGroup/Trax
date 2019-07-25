@@ -124,7 +124,7 @@ describe('Generator', () => {
             @ΔD class Address {
                 ΔΔstreet?: string = ""; @Δp(ΔfStr, 2) street?: string;
                 ΔΔzip: number = 12345; @Δp(ΔfNbr) zip: number;
-                ΔΔcountry; @Δp() country: any; ΔDefault(n) {switch (n) {case "street": return  ""; case "zip": return  12345}; return Δu;};
+                ΔΔcountry; @Δp() country: any; ΔDefault(n) {switch (n) {case "street": return ""; case "zip": return 12345}; return Δu;};
             }
         `, "1");
     });

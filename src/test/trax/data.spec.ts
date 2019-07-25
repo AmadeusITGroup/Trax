@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2 } from "./fixture";
+import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount } from "./fixture";
 import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data } from '../../trax';
 
 describe('Data objects', () => {
@@ -399,6 +399,17 @@ describe('Data objects', () => {
         let n2 = new TestNode2();;
         assert.equal(n.value, "another value", "n value");
         assert.equal(n2.value, "v42", "n2 value");
+    });
+
+    it("should support property initialization with prefix or postfix operators", async function () {
+        resetCount();
+        
+        let n = new TestNode2();
+        assert.equal(n.quantity, -1, "quantity is -1");
+        assert.equal(n.count, 0, "first count is 0");
+
+        let n2 = new TestNode2();
+        assert.equal(n2.count, 1, "second count is 1");
     });
 
 });

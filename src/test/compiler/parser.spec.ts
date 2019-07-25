@@ -276,10 +276,13 @@ describe('Parser', () => {
     it("should parse base type default values", async function () {
         let r = parse(`\
             import { Data } from "./trax";
+            let count = 0;
             @Data class Foo {
                 bar = 123;
                 baz:string = "abc";
                 bar2 = false;
+                bar3 = -123;
+                bar4 = count++;
             }
         `, "file1.ts");
 
@@ -290,37 +293,59 @@ describe('Parser', () => {
         }, {
             "kind": "data",
             "className": "Foo",
-            "pos": 42,
-            "decoPos": 55,
-            "classNameEnd": 70,
+            "pos": 69,
+            "decoPos": 82,
+            "classNameEnd": 97,
             "log": false,
             "members": [
                 {
                     "kind": "property",
-                    "defaultValue": { end: 98, pos: 94, text: " 123" },
-                    "end": 99,
-                    "namePos": 89,
+                    "defaultValue": { end: 125, pos: 121, text: "123" },
+                    "end": 126,
+                    "namePos": 116,
                     "name": "bar",
                     "shallowRef": false,
                     "type": { "kind": "number" }
                 },
                 {
                     "kind": "property",
-                    "defaultValue": { end: 134, pos: 128, text: ' "abc"' },
-                    "end": 135,
-                    "namePos": 116,
+                    "defaultValue": { end: 161, pos: 155, text: '"abc"' },
+                    "end": 162,
+                    "namePos": 143,
                     "name": "baz",
                     "shallowRef": false,
                     "type": { "kind": "string" }
                 },
                 {
                     "kind": "property",
-                    "defaultValue": { end: 164, pos: 158, text: " false" },
-                    "end": 165,
-                    "namePos": 152,
+                    "defaultValue": { end: 191, pos: 185, text: "false" },
+                    "end": 192,
+                    "namePos": 179,
                     "name": "bar2",
                     "shallowRef": false,
                     "type": { "kind": "boolean" }
+                },
+                {
+                    "defaultValue": { "end": 220, "pos": 215, "text": "-123" },
+                    "end": 221,
+                    "kind": "property",
+                    "name": "bar3",
+                    "namePos": 209,
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "number"
+                    }
+                },
+                {
+                    "defaultValue": { "end": 252, "pos": 244, "text": "count++" },
+                    "end": 253,
+                    "kind": "property",
+                    "name": "bar4",
+                    "namePos": 238,
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "any"
+                    }
                 }
             ]
         }], "1");
