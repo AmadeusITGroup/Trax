@@ -53,6 +53,10 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
 
     function error(message: string, node: ts.Node) {
         // TODO
+        let info = getLineInfo(node.pos);
+        if (info) {
+            throw new Error(`${message}\n - Line #${info.lineNbr} / Column #${info.columnNbr}\n - Line content: >>${info.lineContent}<<\n`);
+        }
         throw new Error(message + " at pos: " + node.pos);
     }
 
@@ -203,8 +207,8 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                                     error("Function properties are not supported in this context", c);
                                 }
                             } else if (c.kind !== SK.Parameter && c.getText() !== "any") {
-                                console.log(c.getText(), c);
-                                error("Unsupported syntax", c);
+                                // console.log(c.getText(), c);
+                                error("Unsupported Syntax", c);
                             }
                         }
                     }
@@ -315,7 +319,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
             }
         }
         if (raiseErrorIfInvalid && n.kind !== SK.Decorator) {
-            console.log("Unsupported type", n)
+            // console.log("Unsupported type", n)
             error("Unsupported type", n);
         }
         return null;
@@ -353,6 +357,26 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
             }
         }
         return false;
+    }
+
+    function getLineInfo(pos: number): { lineNbr: number, lineContent: string, columnNbr: number } | null {
+        let lines = src.split("\n"), lineLen = 0, posCount = 0, idx = 0;
+        while (idx < lines.length) {
+            lineLen = lines[idx].length;
+            if (posCount + lineLen < pos) {
+                // continue
+                idx++;
+                posCount += lineLen + 1; // +1 for carriage return
+            } else {
+                // stop
+                return {
+                    lineNbr: idx + 1,
+                    lineContent: lines[idx],
+                    columnNbr: 1 + pos - posCount
+                }
+            }
+        }
+        return null;
     }
 }
 
