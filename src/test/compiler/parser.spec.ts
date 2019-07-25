@@ -300,7 +300,7 @@ describe('Parser', () => {
             "members": [
                 {
                     "kind": "property",
-                    "defaultValue": { end: 125, pos: 121, text: "123" },
+                    "defaultValue": { end: 125, pos: 121, text: "123", fullText: " 123", isComplexExpression: false },
                     "end": 126,
                     "namePos": 116,
                     "name": "bar",
@@ -309,7 +309,7 @@ describe('Parser', () => {
                 },
                 {
                     "kind": "property",
-                    "defaultValue": { end: 161, pos: 155, text: '"abc"' },
+                    "defaultValue": { end: 161, pos: 155, text: '"abc"', fullText: ' "abc"', isComplexExpression: false },
                     "end": 162,
                     "namePos": 143,
                     "name": "baz",
@@ -318,7 +318,7 @@ describe('Parser', () => {
                 },
                 {
                     "kind": "property",
-                    "defaultValue": { end: 191, pos: 185, text: "false" },
+                    "defaultValue": { end: 191, pos: 185, text: "false", fullText: " false", isComplexExpression: false },
                     "end": 192,
                     "namePos": 179,
                     "name": "bar2",
@@ -326,7 +326,7 @@ describe('Parser', () => {
                     "type": { "kind": "boolean" }
                 },
                 {
-                    "defaultValue": { "end": 220, "pos": 215, "text": "-123" },
+                    "defaultValue": { "end": 220, "pos": 215, "text": "-123", fullText: " -123", isComplexExpression: true },
                     "end": 221,
                     "kind": "property",
                     "name": "bar3",
@@ -337,7 +337,7 @@ describe('Parser', () => {
                     }
                 },
                 {
-                    "defaultValue": { "end": 252, "pos": 244, "text": "count++" },
+                    "defaultValue": { "end": 252, "pos": 244, "text": "count++", fullText: " count++", isComplexExpression: true },
                     "end": 253,
                     "kind": "property",
                     "name": "bar4",
@@ -613,9 +613,11 @@ describe('Parser', () => {
             "log": false,
             "members": [{
                 "defaultValue": {
-                    "end": 104,
-                    "pos": 94,
-                    "text": "init(123)"
+                    end: 104,
+                    pos: 94,
+                    text: "init(123)",
+                    fullText: " init(123)",
+                    isComplexExpression: true
                 },
                 "end": 105,
                 "kind": "property",
@@ -627,9 +629,11 @@ describe('Parser', () => {
                 }
             }, {
                 "defaultValue": {
-                    "end": 146,
-                    "pos": 131,
-                    "text": "new Bar(\"abc\")"
+                    end: 146,
+                    pos: 131,
+                    text: "new Bar(\"abc\")",
+                    fullText: " new Bar(\"abc\")",
+                    isComplexExpression: true
                 },
                 "end": 147,
                 "kind": "property",
@@ -643,6 +647,49 @@ describe('Parser', () => {
             }],
             "pos": 42
         }]);
+    });
+
+    it("should parse Array literals default values", async function () {
+        let r = parse(`\
+            import { Data } from "./trax";
+            @Data class Foo {
+                bar:number[] = [1,2,3];
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [
+            {
+                "insertPos": 25,
+                "kind": "import",
+                "values": {
+                    "Data": 1
+                }
+            },
+            {
+                "className": "Foo",
+                "classNameEnd": 70,
+                "decoPos": 55,
+                "kind": "data",
+                "log": false,
+                "pos": 42,
+                "members": [
+                    {
+                        "defaultValue": { "end": 111, "pos": 103, "text": "[1,2,3]", fullText: " [1,2,3]", isComplexExpression: true },
+                        "end": 112,
+                        "kind": "property",
+                        "name": "bar",
+                        "namePos": 89,
+                        "shallowRef": false,
+                        "type": {
+                            "itemType": {
+                                "kind": "number"
+                            },
+                            "kind": "array"
+                        }
+                    }
+                ]
+            }
+        ]);
     });
 
     it("should parse @computed properties", async function () {

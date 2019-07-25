@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount } from "./fixture";
+import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount, TestNode3 } from "./fixture";
 import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data } from '../../trax';
 
 describe('Data objects', () => {
@@ -388,7 +388,7 @@ describe('Data objects', () => {
         assert.equal(n.value, "v42", "value");
         assert.equal(n.bar.v, "Xthe_barX", "bar.v");
 
-        assert.equal(isMutating(n), false, "not mutating");
+        assert.equal(isMutating(n), true, "mutating as property was initialized with complex expression");
 
         n.value = 'another value';
         assert.equal(isMutating(n), true, "now mutating");
@@ -403,13 +403,27 @@ describe('Data objects', () => {
 
     it("should support property initialization with prefix or postfix operators", async function () {
         resetCount();
-        
         let n = new TestNode2();
         assert.equal(n.quantity, -1, "quantity is -1");
         assert.equal(n.count, 0, "first count is 0");
 
         let n2 = new TestNode2();
         assert.equal(n2.count, 1, "second count is 1");
+    });
+
+    it("should support property initialization with Array literals", async function () {
+        let n = new TestNode3();
+        assert.equal(n.arr1.length, 3, "arr1.length is 3");
+        assert.equal(n.arr1[0], 1, "arr1[0] is 1");
+        assert.equal(isMutating(n), true, "not mutating (1)");
+        n.arr1[0] = 42;
+        assert.equal(isMutating(n), true, "not mutating (2)");
+        assert.equal(n.arr1[0], 42, "arr1[0] is 42");
+        assert.equal(n.arr2[0], "abc", "arr2[0] is abc");
+
+        let n2 = new TestNode3();
+        assert.equal(n2.arr1.length, 3, "arr1.length is 3");
+        assert.equal(n2.arr1[0], 1, "arr1[0] is 1");
     });
 
 });

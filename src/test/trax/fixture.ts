@@ -35,6 +35,12 @@ export function resetCount() {
     count = count++;
 }
 
+@Data export class TestNode3 {
+    arr1: number[] = [1, 2, 3];
+    arr2: string[] = ["abc"];
+    arr3: any[] = [];
+}
+
 @Data export class SimpleNode {
     value: string;
     quantity: number;

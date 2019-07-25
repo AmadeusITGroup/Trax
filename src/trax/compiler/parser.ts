@@ -198,7 +198,9 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                                 prop.defaultValue = {
                                     pos: c.pos,
                                     end: c.end,
-                                    text: c.getText()
+                                    text: c.getText(),
+                                    fullText: c.getFullText(),
+                                    isComplexExpression: true
                                 }
                             } else if (c.kind === SK.FunctionType) {
                                 if (options && options.ignoreFunctionProperties) {
@@ -208,7 +210,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                                 }
                             } else if (c.kind !== SK.Parameter && c.getText() !== "any") {
                                 // console.log(c.getText(), c);
-                                error("Unsupported Syntax", c);
+                                error("Unsupported Syntax [" + c.kind + "]", c);
                             }
                         }
                     }
@@ -327,7 +329,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
 
     function handleDefaultValue(n: ts.Node, prop: DataProperty): boolean {
         if (n) {
-            let v: string = "", kind = "";
+            let v: string = "", kind = "", complexExpr = false;
             if (n.kind === SK.StringLiteral) {
                 kind = "string";
             } else if (n.kind === SK.NumericLiteral) {
@@ -339,14 +341,20 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 } else if (operand.kind === SK.Identifier) {
                     kind = "any";
                 }
+                complexExpr = true;
             } else if (n.kind === SK.TrueKeyword || n.kind === SK.FalseKeyword) {
                 kind = "boolean";
+            } else if (n.kind === SK.ArrayLiteralExpression) {
+                kind = "any";
+                complexExpr = true;
             }
             if (kind !== "") {
                 prop.defaultValue = {
                     pos: n.pos,
                     end: n.end,
-                    text: n.getText()
+                    text: n.getText(),
+                    fullText: n.getFullText(),
+                    isComplexExpression: complexExpr
                 }
                 if (!prop.type) {
                     prop.type = {

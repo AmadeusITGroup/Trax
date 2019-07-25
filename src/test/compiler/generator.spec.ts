@@ -184,7 +184,7 @@ describe('Generator', () => {
             }
 
             @xΔD class Bar {
-                ΔΔtheFoo: Foo = new Foo(); @xΔp(xΔf(Foo)) theFoo: Foo; ΔDefault(n) {switch (n) {case "theFoo": return new Foo()}; return xΔu;};
+                ΔΔtheFoo: Foo; @xΔp(xΔf(Foo)) theFoo: Foo = new Foo(); ΔDefault(n) {switch (n) {case "theFoo": return new Foo()}; return xΔu;};
             }
         `, "1");
     });
@@ -359,6 +359,22 @@ describe('Generator', () => {
             @ΔD class Address {
                 ΔΔstreet: string | null; @Δp(ΔfStr, 1) street: string | null;
                 ΔΔ$content: IvContent; @Δp() $content: any;
+            }
+        `, "1");
+    });
+
+    it("should support initialization with complex values", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                arr:string[] = ["abc"];
+            }
+        `, 'myFile.ts', { interfaceTypes: ["IvContent"] }), `
+            import { ΔD, ΔfStr, Δlf, Δp, Δu } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔarr:string[]; @Δp(Δlf(ΔfStr)) arr: string[] = ["abc"]; ΔDefault(n) {switch (n) {case "arr": return ["abc"]}; return Δu;};
             }
         `, "1");
     });
