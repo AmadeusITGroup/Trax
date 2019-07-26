@@ -379,5 +379,21 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support initialization with null", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                bar: Bar | null = null;
+            }
+        `, 'myFile.ts', { interfaceTypes: ["IvContent"] }), `
+            import { ΔD, Δf, Δp, Δu } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔbar: Bar | null = null; @Δp(Δf(Bar), 1) bar: Bar | null; ΔDefault(n) {switch (n) {case "bar": return null}; return Δu;};
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });

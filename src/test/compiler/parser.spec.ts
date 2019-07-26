@@ -829,4 +829,69 @@ describe('Parser', () => {
         }
         ]);
     });
+
+    it("should accept null as default value", async function () {
+        let r = parse(`\
+            import { Data } from "./trax";
+            @Data class Foo {
+                foo: Bar | null = null;
+                bar = null;
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            "insertPos": 25,
+            "kind": "import",
+            "values": {
+                "Data": 1
+            }
+        },
+        {
+            "className": "Foo",
+            "classNameEnd": 70,
+            "decoPos": 55,
+            "kind": "data",
+            "log": false,
+            "members": [
+                {
+                    "defaultValue": {
+                        "end": 111,
+                        "fullText": " null",
+                        "isComplexExpression": false,
+                        "pos": 106,
+                        "text": "null"
+                    },
+                    "end": 112,
+                    "kind": "property",
+                    "name": "foo",
+                    "namePos": 89,
+                    "shallowRef": false,
+                    "type": {
+                        "canBeNull": true,
+                        "canBeUndefined": false,
+                        "identifier": "Bar",
+                        "kind": "reference"
+                    }
+                },
+                {
+                    "defaultValue": {
+                        "end": 139,
+                        "fullText": " null",
+                        "isComplexExpression": false,
+                        "pos": 134,
+                        "text": "null"
+                    },
+                    "end": 140,
+                    "kind": "property",
+                    "name": "bar",
+                    "namePos": 129,
+                    "shallowRef": false,
+                    "type": {
+                        "kind": "any"
+                    }
+                }
+            ],
+            "pos": 42
+        }], "1");
+    })
 });

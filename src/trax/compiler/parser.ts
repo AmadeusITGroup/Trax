@@ -347,6 +347,12 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
             } else if (n.kind === SK.ArrayLiteralExpression) {
                 kind = "any";
                 complexExpr = true;
+            } else if (n.kind === SK.NullKeyword || n.kind === SK.UndefinedKeyword) {
+                if (prop.type && prop.type.kind) {
+                    kind = prop.type.kind;
+                } else {
+                    kind = "any";
+                }
             }
             if (kind !== "") {
                 prop.defaultValue = {
