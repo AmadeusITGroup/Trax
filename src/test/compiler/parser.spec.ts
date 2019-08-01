@@ -49,6 +49,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1 }
         }, {
@@ -113,6 +114,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 20,
             insertPos: 25,
             values: { Data: 1 }
         }, {
@@ -159,6 +161,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 20,
             insertPos: 25,
             values: { Data: 1 }
         }, {
@@ -213,6 +216,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 20,
             insertPos: 25,
             values: { Data: 1 }
         }, {
@@ -249,6 +253,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 20,
             insertPos: 25,
             values: { Data: 1 }
         }, {
@@ -288,6 +293,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 20,
             insertPos: 25,
             values: { Data: 1 }
         }, {
@@ -367,6 +373,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1 }
         }, {
@@ -425,6 +432,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1, log: 1 },
         }, {
@@ -461,6 +469,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1 },
         }, {
@@ -500,6 +509,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1 },
         }, {
@@ -544,6 +554,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             kind: "import",
+            pos: 44,
             insertPos: 49,
             values: { Data: 1 },
         }, {
@@ -601,6 +612,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             "insertPos": 25,
+            "pos": 20,
             "kind": "import",
             "values": {
                 "Data": 1
@@ -660,6 +672,7 @@ describe('Parser', () => {
         assert.deepEqual(r, [
             {
                 "insertPos": 25,
+                "pos": 20,
                 "kind": "import",
                 "values": {
                     "Data": 1
@@ -706,6 +719,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             "insertPos": 25,
+            "pos": 20,
             "kind": "import",
             "values": {
                 "Data": 1
@@ -752,6 +766,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             "insertPos": 25,
+            "pos": 20,
             "kind": "import",
             "values": {
                 "Data": 1
@@ -797,6 +812,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             "insertPos": 25,
+            "pos": 20,
             "kind": "import",
             "values": {
                 "Data": 1
@@ -841,6 +857,7 @@ describe('Parser', () => {
 
         assert.deepEqual(r, [{
             "insertPos": 25,
+            "pos": 20,
             "kind": "import",
             "values": {
                 "Data": 1

@@ -2,6 +2,7 @@
 import * as assert from 'assert';
 import { generate } from '../../trax/compiler/generator';
 import { DataMember } from '../../trax/compiler/types';
+import { formatError } from './utils';
 
 describe('Generator', () => {
 
@@ -248,12 +249,15 @@ describe('Generator', () => {
                 @Data class Foo {
                     sth: string[];
                 }
-            `, 'myFile.ts', { validator: listValidator });
+            `, 'myFile.ts', { validator: listValidator, logErrors: false });
         } catch (ex) {
-            errMsg = ex.message;
+            errMsg = formatError(ex);
         }
-        // TODO: cleanup error message
-        assert.equal(errMsg, "[TRAX]Error: [TRAX]Array properties should use the List suffix, e.g. sthList - file: myFile.ts - file: myFile.ts", "validation error");
+        assert.equal(errMsg, `
+            TRAX: Array properties should use the List suffix, e.g. sthList
+            File: myFile.ts - Line 5 / Col 21
+            Extract: >> sth: string[]; <<
+        `, "validation error");
 
         assert.equal(generate(`
             import { Data } from "./trax";
