@@ -327,7 +327,7 @@ describe('Generator', () => {
         `, "1");
     });
 
-    it("should avoid ignore function properties if specified in options", async function () {
+    it("should support function properties", async function () {
         assert.equal(generate(`
             import { Data } from "./trax";
 
@@ -337,14 +337,14 @@ describe('Generator', () => {
                 baz: () => void;
                 foo: (x, y:string)=>number;
             }
-        `, 'myFile.ts', { ignoreFunctionProperties: true }), `
+        `, 'myFile.ts'), `
             import { ΔD, Δlf, Δp } from "./trax";
 
             @ΔD class Address {
                 ΔΔstreets: any[]; @Δp(Δlf()) streets: any[];
                 ΔΔbar: Function; @Δp() bar: any;
-                baz: () => void;
-                foo: (x, y:string)=>number;
+                ΔΔbaz: () => void; @Δp() baz: any;
+                ΔΔfoo: (x, y:string)=>number; @Δp() foo: any;
             }
         `, "1");
     });

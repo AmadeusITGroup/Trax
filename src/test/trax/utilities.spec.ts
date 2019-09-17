@@ -125,6 +125,16 @@ describe('Trax utilities', () => {
         assert.equal(hasProperty("", "foo"), false, "8");
         assert.equal(hasProperty(null, "foo"), false, "9");
         assert.equal(hasProperty(n, "foo"), false, "10");
+
+        @Data class MyData {
+            foo: any;
+            func1: Function;
+            func2: () => void;
+        }
+        let n2 = new MyData();
+        assert.equal(hasProperty(n2, "foo"), true, "11");
+        assert.equal(hasProperty(n2, "func1"), true, "12");
+        assert.equal(hasProperty(n2, "func2"), true, "13");
     });
 
     it("should allow to synchronously track/untrack the changes occurring on an object", function () {

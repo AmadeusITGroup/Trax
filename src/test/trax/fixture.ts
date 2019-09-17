@@ -77,6 +77,11 @@ export function resetCount() {
     }
 }
 
+// TODO
+// @Data export class TestDictionary {
+//     dict: { [key: string]: string };
+// }
+
 export function initNewArrTestNode(): ArrTestNode {
     let node10 = new ArrTestNode(),
         list = node10.list,
