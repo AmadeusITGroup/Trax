@@ -194,7 +194,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 }, skipProperty = false;
 
                 m.forEachChild((c) => {
-                    if (c.kind === SK.Identifier) {
+                    if (c.kind === SK.Identifier && !prop.name) {
                         prop.name = c.getText();
                         prop.namePos = c.end - prop.name.length;
                     } else if (c.kind === SK.QuestionToken) {
@@ -204,7 +204,7 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                         if (tp) {
                             prop.type = tp;
                         } else if (!handleDefaultValue(c, prop) && c.kind !== SK.Decorator) {
-                            if (c.kind === SK.CallExpression || c.kind === SK.NewExpression) {
+                            if (c.kind === SK.CallExpression || c.kind === SK.NewExpression || c.kind === SK.Identifier) {
                                 prop.defaultValue = {
                                     pos: c.pos,
                                     end: c.end,
