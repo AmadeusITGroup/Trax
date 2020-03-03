@@ -8,9 +8,11 @@
     "author": "Bertrand Laporte",
     "copyright": "Amadeus s.a.s.",
     "scripts": {
-        "build": "rm -rf dist/ && tsc",
-        "test": "yarn cp-tests && yarn wp-tests-no-build",
-        "cp-tests": "yarn build && yarn mocha -r ts-node/register src/test/compiler/*.spec.ts --reporter dot",
+        "build": "rm -rf dist/ && tsc && yarn plugin",
+        "plugin": "rollup --config rollup.config.js",
+        "test": "rm -rf dist/ && yarn plugin && yarn cp-tests && yarn rp-tests",
+        "cp-tests": "tsc && yarn mocha -r ts-node/register src/test/compiler/*.spec.ts --reporter dot",
+        "rp-tests": "rollup --config src/test/trax/rollup.config.js && yarn mocha dist/rollup.test.specs.js --reporter dot",
         "wp-tests": "yarn build && yarn wp-tests-no-build",
         "wp-tests-no-build": "webpack --config-name tests && yarn mocha dist/test.specs.js --reporter dot"
     },
@@ -25,10 +27,12 @@
         "ts-node": "^8.0.2",
         "tslib": "^1.9.3",
         "webpack": "^4.29.6",
-        "webpack-cli": "^3.2.3",
+        "webpack-cli": "^3.3.11",
         "ts-loader": "^5.3.3",
         "file-loader": "^3.0.1",
-        "vscode-textmate": "^4.0.1"
+        "rollup": "^1.32.0",
+        "rollup-plugin-typescript2": "^0.26.0",
+        "rollup-pluginutils": "^2.8.2"
     },
     "dependencies": {
         "typescript": "^3.3.3333",
