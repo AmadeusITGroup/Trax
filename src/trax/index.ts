@@ -517,6 +517,7 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
     if (o.ΔComputeDependencies) {
         o.ΔComputeDependencies[propName] = true;
     }
+    // console.log("ΔGet", ΔΔPropName)
     // if (propName && cf && o["$json"]) {
     //     // init object from json structure
     //     let json = o["$json"];
@@ -597,7 +598,7 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
  * @param ΔΔpropName the name or index of the property (should start with "ΔΔ" - e.g. "ΔΔvalue")
  * @param newValue the new property value (will be compared to current value)
  * @param cf [optional] the constructor or factory associated with the property Object
- * @param propHolder the name of the property holding all properties (e.g. for DatList) - optional
+ * @param propHolder the name of the property holding all properties (e.g. for Lists or Dictionaries) - optional
  */
 function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string | number, newValue: any, factory: Factory<T>, propHolder: any) {
     let isTraxValue = isDataObject(newValue);
@@ -606,6 +607,8 @@ function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string
         console.error("[Trax] @computed properties must not mutate the Data object when calculated");
         return;
     }
+
+    // console.log("ΔSet", propName, "=", newValue)
 
     if (newValue && !isTraxValue && factory.ΔCreateProxy) {
         newValue = factory.ΔCreateProxy(newValue) || newValue;
@@ -636,6 +639,7 @@ function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string
         // notify trackers
         notifyTrackers(o as TraxObject, "set", propName, currentValue, newValue);
     }
+    return newValue;
 }
 
 function notifyTrackers(o: TraxObject, operation: string, propName?: string | number, currentValue?: any, newValue?: any) {
@@ -851,6 +855,7 @@ const ARRAY_MUTATION_METHODS = ["push", "pop", "shift", "unshift", "splice"],
     RX_INT = /^\d+$/,
     RX_TRAX_PROP = /^\Δ/;
 
+// TraxList is the handler of the Array proxies
 class TraxList<T> implements TraxObject {
     ΔTrackable: true = true;
     ΔDataFactory: true = true;
@@ -876,6 +881,7 @@ class TraxList<T> implements TraxObject {
 
     /**
      * Create a proxy around an existing array
+     * This is called when an array property is changed by another array
      */
     static ΔCreateProxy<T>(arr: any, itemFactory: Factory<T>): TraxObject | null {
         if ($isArray(arr)) {
@@ -937,7 +943,7 @@ class TraxList<T> implements TraxObject {
             let idx = parseInt(prop, 10);
             ΔSet(this.ΔΔSelf, idx, idx, value, this.ΔItemFactory, this.ΔΔList);
         } else if (prop.match(RX_TRAX_PROP)) {
-            // prop starts with a $
+            // prop starts with a Δ
             this[prop] = value;
         }
         return true;
@@ -1023,13 +1029,163 @@ export function list<T>(cf: Constructor<T> | Factory<T>): ArrayProxy<T> {
 }
 
 // Creates a list factory for a specific ItemFactory
-function $lf<T>(itemFactory?: Factory<T>): Factory<ArrayProxy<T>> {
+function $lf<T>(itemFactory?: Factory<T>): Factory<Array<T>> {
     itemFactory = itemFactory || ΔfNull as any;
     function listFactory() { return TraxList.ΔNewProxy(itemFactory!) }
     listFactory[MP_IS_FACTORY] = true;
     listFactory[MP_CREATE_PROXY] = function (arr) {
         return TraxList.ΔCreateProxy(arr, itemFactory!);
     }
-    return listFactory as Factory<ArrayProxy<T>>;
+    return listFactory as Factory<Array<T>>;
 };
-export let Δlf = $lf as <T>(itemFactory?: Factory<T>) => Factory<ArrayProxy<T>>;
+export let Δlf = $lf as <T>(itemFactory?: Factory<T>) => Factory<Array<T>>;
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// Dictionary classes
+
+// TraxDict is the handler of the Dictionary proxies
+class TraxDict<T> implements TraxObject {
+    ΔTrackable: true = true;
+    ΔDataFactory: true = true;
+    ΔChangeVersion = 0;
+    ΔMd: TraxMetaData | undefined = undefined;
+    ΔΔDict: { [name: string]: any };  // the actual Object that is behind the Proxy
+    ΔΔSelf = this;                    // reference to the object behind the proxy
+    ΔΔProxy: any;                     // the proxy object - cf. MP_PROXY
+    ΔIsProxy = false;
+    ΔItemFactory: Factory<T>;
+    // ΔComputeDependencies: any;     // object set during the processing of a computed property - undefined otherwise
+    // $acceptsJson = true;
+
+    constructor(itemFactory: Factory<T>) {
+        this.ΔItemFactory = itemFactory;
+    }
+
+    static ΔNewProxy<T>(itemFactory: Factory<T>) {
+        let p = new Proxy({}, new TraxDict(itemFactory));
+        p[MP_PROXY] = p;
+        return p;
+    }
+
+    /**
+     * Create a proxy around an existing object
+     * This is called when an object is set as a dictionary property
+     */
+    static ΔCreateProxy<T>(o: any, itemFactory: Factory<T>): TraxObject | null {
+        if (typeof o === "object") {
+            let p = new Proxy(o, new TraxDict(itemFactory));
+            touch(p);
+            for (let k in o) if (o.hasOwnProperty(k)) {
+                ΔConnectChildToParent(p, o[k]);
+            }
+            return p;
+        }
+        return null;
+    }
+
+    /**
+     * Create a new Item and store it in the list - used by create()
+     * @param index [optional] the index where to store the item - default = list length. If negative, the item will be created but not stored in the list
+     */
+    $newItem(name: string): T {
+        let itm = (<any>this).ΔItemFactory();
+        return ΔSet(this.ΔΔSelf, name, name, itm, this.ΔItemFactory, this.ΔΔDict) as T;
+    }
+
+    /**
+     * Dispose the current TraxList so that all items don't have any backward reference to it
+     * The TraxList shall not be used after calling this function
+     * @return the array of list items
+     */
+    $dispose(): { [name: string]: any } {
+        let d = this.ΔΔDict;
+        for (let k in d) if (d.hasOwnProperty(k)) {
+            ΔDisconnectChildFromParent(this.ΔΔSelf, d[k]);
+        }
+        return d;
+    }
+
+    ΔToString() {
+        return "Trax Dict {...}";
+    }
+
+    /**
+     * Proxy handler method called on each property set
+     * @param target the list array (cf. listProxy() factory)
+     * @param prop the property name
+     * @param value the value
+     */
+    set(target: any, prop: string, value: any) {
+        // console.log("TraxDict.set", prop, value)
+        if (!this.ΔΔDict) {
+            this.ΔΔDict = target;
+        }
+        if (prop.match(RX_TRAX_PROP)) {
+            // prop starts with a Δ
+            this[prop] = value;
+        } else {
+            ΔSet(this.ΔΔSelf, prop, prop, value, this.ΔItemFactory, this.ΔΔDict);
+        }
+        return true;
+    }
+
+    /**
+     * Proxy handler method called on each property get
+     * @param target the dictionary object
+     * @param prop the property name
+     */
+    get(target, prop) {
+        // console.log("TraxDict.get", prop)
+        if (!this.ΔΔDict) {
+            this.ΔΔDict = target;
+        }
+        if (prop === MP_IS_PROXY) {
+            return true;
+        }
+        if (prop === Symbol.iterator) {
+            return (this.ΔΔDict as any)[Symbol.iterator];
+        }
+
+        let tp = typeof prop;
+        if (tp === "string") {
+            if (prop.match(RX_TRAX_PROP)) {
+                return this[prop];
+            } else {
+                //console.log("TraxDict get value:", prop, "is proxy:", this.ΔΔDict[prop][MP_IS_PROXY])
+                return this.ΔΔDict[prop];
+            }
+        }
+        return this[prop];
+    }
+
+    /**
+     * Proxy handler method called on each property delete
+     * @param target the dictionary object
+     * @param prop the property name
+     */
+    deleteProperty(target, prop) {
+        if (!this.ΔΔDict) {
+            this.ΔΔDict = target;
+        }
+        if (!prop.match(RX_TRAX_PROP)) {
+            ΔSet(this.ΔΔSelf, prop, prop, null, this.ΔItemFactory, this.ΔΔDict);
+            delete this.ΔΔDict[prop];
+            return true;
+        }
+        return false;
+    }
+}
+
+// Creates a dictionary factory for a specific ItemFactory
+function $df<T>(itemFactory?: Factory<T>): Factory<{ [k: string]: T }> {
+    itemFactory = itemFactory || ΔfNull as any;
+    function dictFactory() {
+        return TraxDict.ΔNewProxy(itemFactory!)
+    }
+    dictFactory[MP_IS_FACTORY] = true;
+    dictFactory[MP_CREATE_PROXY] = function (d: any) {
+        return TraxDict.ΔCreateProxy(d, itemFactory!);
+    }
+    return dictFactory as Factory<{ [k: string]: T }>;
+};
+export let Δdf = $df as <T>(itemFactory?: Factory<T>) => Factory<{ [k: string]: T }>;

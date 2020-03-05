@@ -26,6 +26,7 @@
 		"noEmitOnError": true
 	},
 	"include": [
-		"src/**/*.ts"
+		"src/**/*.ts",
+        "src/test/trax/*.ts"
 	]
 }

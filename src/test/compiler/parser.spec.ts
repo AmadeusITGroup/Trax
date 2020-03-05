@@ -235,7 +235,12 @@ describe('Parser', () => {
                 "shallowRef": false,
                 "type": {
                     "kind": "dictionary",
+                    "indexName": "k",
                     "itemType": {
+                        "kind": "reference",
+                        "identifier": "Address"
+                    },
+                    "indexType": {
                         "kind": "string"
                     }
                 }

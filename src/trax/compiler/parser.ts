@@ -292,10 +292,11 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 if (members && members.length === 1 && members[0].kind === SK.IndexSignature) {
                     let idxSignature = members[0] as ts.IndexSignatureDeclaration, parameters = idxSignature.parameters;
                     if (parameters && parameters.length === 1) {
-                        let tp = getTypeObject(parameters[0].type!);
                         return {
                             kind: "dictionary",
-                            itemType: tp!
+                            indexName: parameters[0].name.getText(),
+                            indexType: getTypeObject(parameters[0].type!)!,
+                            itemType: getTypeObject(idxSignature.type!)!
                         }
                     }
                 }

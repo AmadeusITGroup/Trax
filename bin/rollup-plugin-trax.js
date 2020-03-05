@@ -335,10 +335,11 @@ function parse(src, filePath, options) {
                 if (members && members.length === 1 && members[0].kind === SK.IndexSignature) {
                     var idxSignature = members[0], parameters = idxSignature.parameters;
                     if (parameters && parameters.length === 1) {
-                        var tp = getTypeObject(parameters[0].type);
                         return {
                             kind: "dictionary",
-                            itemType: tp
+                            indexName: parameters[0].name.getText(),
+                            indexType: getTypeObject(parameters[0].type),
+                            itemType: getTypeObject(idxSignature.type)
                         };
                     }
                 }
@@ -705,6 +706,20 @@ function generate(src, filePath, options) {
             }
             else {
                 throw new Error("Item type must be specified in Arrays");
+            }
+        }
+        else if (tp.kind === "dictionary") {
+            if (!tp.indexType || tp.indexType.kind !== "string") {
+                throw new Error("Dictionaries can only be indexed by strings");
+            }
+            if (tp.itemType) {
+                var info = getTypeInfo(tp.itemType);
+                typeRef = "{ [" + tp.indexName + ": string]: " + info.typeRef + " }";
+                factory = libPrefix + "Δdf(" + info.factory + ")";
+                addImport(libPrefix + "Δdf");
+            }
+            else {
+                throw new Error("Invalid item type");
             }
         }
         else {

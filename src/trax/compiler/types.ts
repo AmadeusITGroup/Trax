@@ -76,7 +76,9 @@ interface RefType {
 }
 
 interface CollectionType {
-    kind: "array" | "map" | "dictionary";
+    kind: "array" | "dictionary";
+    indexName?: string;
+    indexType?: DataType;
     itemType: DataType;
     canBeNull?: boolean;
     canBeUndefined?: boolean;

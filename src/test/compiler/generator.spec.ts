@@ -399,5 +399,40 @@ describe('Generator', () => {
         `, "1");
     });
 
+    it("should support Dictionaries", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                persons: { [name: string]: Person };
+                bar: {[name:string]: string};
+                baz: {[name:string]: Address | null};
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, Δf, Δdf, Δp, ΔfStr } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔpersons: { [name: string]: Person }; @Δp(Δdf(Δf(Person))) persons: { [name: string]: Person };
+                ΔΔbar: {[name:string]: string}; @Δp(Δdf(ΔfStr)) bar: { [name: string]: string };
+                ΔΔbaz: {[name:string]: Address | null}; @Δp(Δdf(Δf(Address))) baz: { [name: string]: Address | null };
+            }
+        `, "1");
+
+
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                students: { [gender: string]: { [name: string]: Person } };
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, Δf, Δdf, Δp } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔstudents: { [gender: string]: { [name: string]: Person } }; @Δp(Δdf(Δdf(Δf(Person)))) students: { [gender: string]: { [name: string]: Person } };
+            }
+        `, "2");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });

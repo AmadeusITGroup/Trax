@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList, ArrTestNode, initNewArrTestNode } from './fixture';
-import { isMutating, changeComplete, isDataObject, ΔfNbr, Δf, Δlf, Data, ArrayProxy, list, version } from '../../trax';
+import { isMutating, changeComplete, isDataObject, ΔfNbr, Δf, Δlf, Data, list } from '../../trax';
 
 describe('Lists', () => {
 
@@ -253,8 +253,6 @@ describe('Lists', () => {
         assert.equal((ls[0] as any)[MP_META_DATA].parents, node.list[MP_SELF], "list items still have 1 parent");
     });
 
-    // TODO: support array set and create a new proxy automatically
-
     it('should support toString', async function () {
         let ls = list(Number);
 
@@ -278,9 +276,9 @@ describe('Lists', () => {
             list: TestNode[][];
         }
 
-        let ls = new LsNode(),
-            l0 = (ls.list as ArrayProxy<TestNode[]>).$newItem(),
-            l00 = (l0 as ArrayProxy<TestNode>).$newItem();
+        const ls = new LsNode();
+        ls.list[0] = [];
+        const l00 = ls.list[0][0] = new TestNode();
 
         assert.equal(ls.list[0][0].value, "v1", "default value 1");
         assert.equal(isMutating(ls.list), true, "l is mutating");

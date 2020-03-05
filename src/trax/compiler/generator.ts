@@ -274,14 +274,26 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
             if (tp.itemType) {
                 let info = getTypeInfo(tp.itemType);
                 if (info.typeRef.match(RX_NULL_TYPE)) {
-                    typeRef = "(" + info.typeRef + ")[]"
+                    typeRef = "(" + info.typeRef + ")[]";
                 } else {
-                    typeRef = info.typeRef + "[]"
+                    typeRef = info.typeRef + "[]";
                 }
                 factory = libPrefix + "Δlf(" + info.factory + ")";
                 addImport(libPrefix + "Δlf");
             } else {
                 throw new Error("Item type must be specified in Arrays");
+            }
+        } else if (tp.kind === "dictionary") {
+            if (!tp.indexType || tp.indexType!.kind !== "string") {
+                throw new Error("Dictionaries can only be indexed by strings");
+            }
+            if (tp.itemType) {
+                let info = getTypeInfo(tp.itemType);
+                typeRef = "{ [" + tp.indexName! + ": string]: " + info.typeRef + " }";
+                factory = libPrefix + "Δdf(" + info.factory + ")";
+                addImport(libPrefix + "Δdf");
+            } else {
+                throw new Error("Invalid item type");
             }
         } else {
             throw new Error("Generator doesn't support type " + tp.kind + " yet");
