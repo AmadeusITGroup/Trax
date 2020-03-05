@@ -8,7 +8,7 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_IS_PROXY = "ΔIsProxy",
     MP_DEFAULT = "ΔDefault",
     MP_CREATE_PROXY = "ΔCreateProxy",
-    MP_NEW_ITEM = "$newItem";
+    MP_NEW_ITEM = "ΔnewItem";
 
 let FORCE_CREATION = false;
 
@@ -900,7 +900,7 @@ class TraxList<T> implements TraxObject {
      * Create a new Item and store it in the list
      * @param index [optional] the index where to store the item - default = list length. If negative, the item will be created but not stored in the list
      */
-    $newItem(index?: number): T {
+    ΔnewItem(index?: number): T {
         let itm = (<any>this).ΔItemFactory();
         if (index === undefined) {
             index = this.ΔΔList.length;
@@ -916,7 +916,7 @@ class TraxList<T> implements TraxObject {
      * The TraxList shall not be used after calling this function
      * @return the array of list items
      */
-    $dispose(): any[] {
+    Δdispose(): any[] {
         let ls = this.ΔΔList, idx = ls.length;
         while (idx--) {
             ΔDisconnectChildFromParent(this.ΔΔSelf, ls[idx]);
@@ -1015,19 +1015,6 @@ class TraxList<T> implements TraxObject {
     }
 }
 
-export interface ArrayProxy<T> extends Array<T> {
-    $newItem(index?: number): T;
-    $dispose(): T[];
-}
-
-/**
- * Return a new list of cf items 
- * @param cf list item Constructor or Factory object
- */
-export function list<T>(cf: Constructor<T> | Factory<T>): ArrayProxy<T> {
-    return TraxList.ΔNewProxy(createFactory(cf));
-}
-
 // Creates a list factory for a specific ItemFactory
 function $lf<T>(itemFactory?: Factory<T>): Factory<Array<T>> {
     itemFactory = itemFactory || ΔfNull as any;
@@ -1084,20 +1071,20 @@ class TraxDict<T> implements TraxObject {
     }
 
     /**
-     * Create a new Item and store it in the list - used by create()
-     * @param index [optional] the index where to store the item - default = list length. If negative, the item will be created but not stored in the list
+     * Create a new Item and store it in the dictionary - used by create()
+     * @param key the key where to store the item
      */
-    $newItem(name: string): T {
+    ΔnewItem(key: string): T {
         let itm = (<any>this).ΔItemFactory();
-        return ΔSet(this.ΔΔSelf, name, name, itm, this.ΔItemFactory, this.ΔΔDict) as T;
+        return ΔSet(this.ΔΔSelf, key, key, itm, this.ΔItemFactory, this.ΔΔDict) as T;
     }
 
     /**
-     * Dispose the current TraxList so that all items don't have any backward reference to it
+     * Dispose the current TraxDict so that all items don't have any backward reference to it
      * The TraxList shall not be used after calling this function
-     * @return the array of list items
+     * @return the dictionary object
      */
-    $dispose(): { [name: string]: any } {
+    Δdispose(): { [name: string]: any } {
         let d = this.ΔΔDict;
         for (let k in d) if (d.hasOwnProperty(k)) {
             ΔDisconnectChildFromParent(this.ΔΔSelf, d[k]);
@@ -1111,7 +1098,7 @@ class TraxDict<T> implements TraxObject {
 
     /**
      * Proxy handler method called on each property set
-     * @param target the list array (cf. listProxy() factory)
+     * @param target the dictionary object
      * @param prop the property name
      * @param value the value
      */

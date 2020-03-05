@@ -1,20 +1,28 @@
 import * as assert from 'assert';
 import { TestNode, TestList, ArrTestNode, initNewArrTestNode } from './fixture';
-import { isMutating, changeComplete, isDataObject, ΔfNbr, Δf, Δlf, Data, list } from '../../trax';
+import { isMutating, changeComplete, isDataObject, Data } from '../../trax';
 
 describe('Lists', () => {
 
     const MP_META_DATA = "ΔMd", MP_SELF = "ΔΔSelf";
 
+    @Data class DataList {
+        list: TestNode[];
+    }
+
+    @Data class NbrList {
+        list: number[];
+    }
+
     it('should support the creation of List of Datasets', async function () {
-        let ls = list(TestNode);
+        const d = new DataList(), ls = d.list;
 
         assert.equal(isDataObject(ls), true, "ls is a data object");
         assert.equal(ls[0], null, "get null on undefined item");
         assert.equal(ls.length, 0, "empty list after creation");
         assert.equal(isMutating(ls), false, "list is not mutating after creation");
 
-        let nd1 = new TestNode();
+        const nd1 = new TestNode();
         ls[1] = nd1;
 
         assert.equal(ls.length, 2, "length is 2");
@@ -35,7 +43,7 @@ describe('Lists', () => {
     });
 
     it('should support the creation of Lists of Numbers', async function () {
-        let ls = list(ΔfNbr);
+        const nl = new NbrList(), ls = nl.list;
 
         assert.equal(ls[0], null, "get null on undefined item");
         assert.equal(ls.length, 0, "empty list after creation");
@@ -64,10 +72,10 @@ describe('Lists', () => {
     });
 
     it('should accept an array to be set as a list', async function () {
-        let node = new TestList();
+        const node = new TestList();
         assert.deepEqual(node.list, [], "an empty list is created by default");
 
-        let arr = [
+        const arr = [
             new TestNode(),
             new TestNode()
         ]
@@ -97,10 +105,10 @@ describe('Lists', () => {
     });
 
     it('should properly update data lists: nothing -> sthV2 -> sthV3 -> null -> null', async function () {
-        let node = new ArrTestNode();
+        const node = new ArrTestNode();
 
         assert.equal(isMutating(node), false, "node unchanged");
-        let itemA = new TestNode();
+        const itemA = new TestNode();
         node.list[0] = itemA;
         itemA.value = "A";
 
@@ -124,7 +132,7 @@ describe('Lists', () => {
     });
 
     it('should support adding items', async function () {
-        let atn = new ArrTestNode();
+        const atn = new ArrTestNode();
 
         assert.equal(atn.list.length, 0, "empty list");
         let item = new TestNode();
@@ -146,7 +154,8 @@ describe('Lists', () => {
     });
 
     it('should support List.push', async function () {
-        let node = new ArrTestNode(), item: TestNode;
+        const node = new ArrTestNode();
+        let item: TestNode;
 
         await changeComplete(node);
         item = new TestNode();
@@ -174,7 +183,7 @@ describe('Lists', () => {
 
     it('should support List.splice', async function () {
         function stringifyList(list) {
-            let arr: string[] = [];
+            const arr: string[] = [];
             for (let i = 0; list.length > i; i++) {
                 itm = list[i];
                 arr.push(itm ? itm.value : "null");
@@ -182,9 +191,9 @@ describe('Lists', () => {
             return arr.join("-");
         }
 
-        let node = new ArrTestNode(),
-            list = node.list,
-            itm: TestNode;
+        const node = new ArrTestNode(),
+            list = node.list;
+        let itm: TestNode;
         itm = list[0] = new TestNode();
         itm.value = "i1";
         itm = list[1] = new TestNode();
@@ -208,9 +217,9 @@ describe('Lists', () => {
     });
 
     it('should support List.forEach', async function () {
-        let node = initNewArrTestNode();
+        const node = initNewArrTestNode();
         await changeComplete(node);
-        let arr: string[] = [];
+        const arr: string[] = [];
 
         node.list.forEach((value, index, dList) => {
             if (value) {
@@ -221,7 +230,7 @@ describe('Lists', () => {
         assert.equal(arr.join("-"), "i1/0-i2/1-i3/2", "forEach result");
         assert.equal(isMutating(node), false, "node is unchanged");
 
-        let o = {
+        const o = {
             count: 0,
             increment() {
                 this.count++;
@@ -238,10 +247,10 @@ describe('Lists', () => {
     }
 
     it('should support List.filter', async function () {
-        let node = initNewArrTestNode();
+        const node = initNewArrTestNode();
         await changeComplete(node);
 
-        let ls = node.list.filter((item: TestNode, index) => {
+        const ls = node.list.filter((item: TestNode, index) => {
             return (item.value === "i1") || (index === 2);
         });
 
@@ -254,7 +263,7 @@ describe('Lists', () => {
     });
 
     it('should support toString', async function () {
-        let ls = list(Number);
+        const nl = new NbrList(), ls = nl.list;
 
         assert.equal(ls.toString(), "Trax List []", "empty list");
 
@@ -264,10 +273,10 @@ describe('Lists', () => {
     });
 
     it('should support List.indexOf', async function () {
-        let node = initNewArrTestNode();
+        const node = initNewArrTestNode();
         await changeComplete(node);
 
-        let itm1 = node.list[1];
+        const itm1 = node.list[1];
         assert.equal(node.list.indexOf(itm1), 1, "itm1 index is 1");
     });
 
@@ -291,7 +300,7 @@ describe('Lists', () => {
     });
 
     it("should be disposed when not used any longer", async function () {
-        let ls = list(TestNode), // ls is a proxy
+        const dl = new DataList(), ls = dl.list,
             nda = ls[0] = new TestNode(),
             ndb = ls[1] = new TestNode();
 
@@ -301,7 +310,7 @@ describe('Lists', () => {
 
         assert.equal(ls[0]![MP_META_DATA].parents, ls[MP_SELF], "nda has a ls as parent");
 
-        let arr = ls.$dispose();
+        const arr = ls["Δdispose"]();
         assert.equal(arr.length, 2, "2 items returned");
         assert.equal(arr[0].value, "a", "arr[0] is item a");
         assert.deepEqual(arr[0][MP_META_DATA].parents, undefined, "nda a has no more parents");
