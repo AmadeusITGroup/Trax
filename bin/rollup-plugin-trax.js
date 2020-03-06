@@ -53,7 +53,7 @@ function __generator(thisArg, body) {
     }
 }
 
-var LOG = "log", RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, SK = SyntaxKind;
+var LOG = "log", RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, SK = SyntaxKind;
 function getSymbols(symbols) {
     var Data = "Data", ref = "ref", computed = "computed";
     if (!symbols) {
@@ -93,7 +93,12 @@ function parse(src, filePath, options) {
     }
     return result;
     function error(message, node) {
-        var info = getLineInfo(src, node.pos);
+        var txt = node.getFullText() || "";
+        var shift = 0;
+        if (txt.match(/^(\s+)/)) {
+            shift = RegExp.$1.length;
+        }
+        var info = getLineInfo(src, node.pos + shift);
         throw {
             kind: "#Error",
             origin: "TRAX",
@@ -152,7 +157,7 @@ function parse(src, filePath, options) {
         }
     }
     function processClass(node) {
-        var isData = false, decoPos = 0, printLogs = false;
+        var isData = false, decoPos = 0, printLogs = false, decoNode;
         if (node.decorators) {
             var decorators = node.decorators, idx = decorators.length, d = void 0;
             while (idx--) {
@@ -161,6 +166,7 @@ function parse(src, filePath, options) {
                     if (d.expression.getText() === SYMBOLS.Data) {
                         isData = true;
                         decoPos = d.expression.pos - 1;
+                        decoNode = d;
                         // comment the dataset expression to remove it from generated code (and don't impact line numbers)
                         // this.insert("/* ", d.expression.pos - 1);
                         // this.insert(" */", d.expression.end);
@@ -174,7 +180,7 @@ function parse(src, filePath, options) {
         if (!isData)
             return;
         if (!node.name) {
-            error("Data class name must be defined", node);
+            error("Data class name must be defined", decoNode);
         }
         var obj = {
             kind: "data",
@@ -200,7 +206,10 @@ function parse(src, filePath, options) {
                         if (m.decorators[0].getText() === "@computed")
                             return "continue";
                     }
-                    error("Unsupported Data accessor", m);
+                    error("Getters can only be used for @computer properties", m);
+                }
+                else if (m.kind === SK.SetAccessor) {
+                    error("Setters are not supported in trax objects", m);
                 }
                 else if (m.kind === SK.MethodDeclaration) {
                     if (options && options.acceptMethods)
@@ -208,7 +217,7 @@ function parse(src, filePath, options) {
                     error("Methods cannot be defined in this object", m);
                 }
                 else if (m.kind !== SK.PropertyDeclaration) {
-                    error("Invalid Data object member [kind: " + m.kind + "]", m);
+                    error("Invalid class member in trax object", m);
                 }
                 // add $$ in front of the property name
                 var prop = {
@@ -248,7 +257,7 @@ function parse(src, filePath, options) {
                             }
                             else if (c.kind !== SK.Parameter && c.getText() !== "any") {
                                 // console.log(c.getText(), c);
-                                error("Unsupported Syntax [" + c.kind + "]", c);
+                                error("Unsupported use case [" + c.kind + "]", c);
                             }
                         }
                     }
@@ -295,7 +304,7 @@ function parse(src, filePath, options) {
                     n = childNd_1;
                 }
                 else {
-                    error("Unsupported parenthesized type", n);
+                    error("Unsupported case", n);
                 }
             }
             if (n.kind === SK.AnyKeyword) {
@@ -318,9 +327,16 @@ function parse(src, filePath, options) {
                     && options.interfaceTypes.indexOf(n.getText()) > -1) {
                     return { kind: "any" };
                 }
+                var ref = n.getText();
+                if (ref.match(RX_LIST_PATTERN)) {
+                    error("Array collections must be defined through the xxx[] notation", n);
+                }
+                else if (ref.match(RX_DICT_PATTERN)) {
+                    error("Maps and Sets are not supported. Please use Dictionary Objects instead", n);
+                }
                 return {
                     kind: "reference",
-                    identifier: n.getText()
+                    identifier: ref
                 };
             }
             else if (n.kind === SK.ArrayType) {
@@ -335,11 +351,16 @@ function parse(src, filePath, options) {
                 if (members && members.length === 1 && members[0].kind === SK.IndexSignature) {
                     var idxSignature = members[0], parameters = idxSignature.parameters;
                     if (parameters && parameters.length === 1) {
+                        var idxType = getTypeObject(parameters[0].type, true, true);
+                        var itmType = getTypeObject(idxSignature.type, true, true);
+                        if (!idxType || idxType.kind !== "string") {
+                            error("Dictionaries can only be indexed by strings", n);
+                        }
                         return {
                             kind: "dictionary",
                             indexName: parameters[0].name.getText(),
-                            indexType: getTypeObject(parameters[0].type),
-                            itemType: getTypeObject(idxSignature.type)
+                            indexType: idxType,
+                            itemType: itmType
                         };
                     }
                 }
@@ -358,9 +379,12 @@ function parse(src, filePath, options) {
                             canBeUndefined = true;
                         }
                         else {
+                            if (dt !== null) {
+                                error("Multiple data types are not supported", tp);
+                            }
                             dt = getTypeObject(tp, false, false);
                             if (!dt) {
-                                error("Invalid value in union type", tp);
+                                error("Unsupported type", tp);
                                 return null;
                             }
                         }
@@ -467,7 +491,7 @@ function generate(src, filePath, options) {
     try {
         ast = parse(src, filePath, {
             symbols: symbols,
-            acceptMethods: options ? options.acceptMethods : false,
+            acceptMethods: options ? options.acceptMethods : true,
             interfaceTypes: options ? options.interfaceTypes : undefined
         });
         if (ast && ast.length) {
@@ -610,7 +634,8 @@ function generate(src, filePath, options) {
                         }
                     }
                     else {
-                        error("Untyped property are not supported", n);
+                        // this case should not be reachable
+                        error("Invalid case", n);
                     }
                 }
                 catch (ex) {
@@ -705,13 +730,11 @@ function generate(src, filePath, options) {
                 addImport(libPrefix + "Δlf");
             }
             else {
-                throw new Error("Item type must be specified in Arrays");
+                // this case should not occur (caught by parser)
+                throw "Item type must be specified in Arrays";
             }
         }
         else if (tp.kind === "dictionary") {
-            if (!tp.indexType || tp.indexType.kind !== "string") {
-                throw new Error("Dictionaries can only be indexed by strings");
-            }
             if (tp.itemType) {
                 var info = getTypeInfo(tp.itemType);
                 typeRef = "{ [" + tp.indexName + ": string]: " + info.typeRef + " }";
@@ -719,11 +742,13 @@ function generate(src, filePath, options) {
                 addImport(libPrefix + "Δdf");
             }
             else {
-                throw new Error("Invalid item type");
+                // this case should not occur (caught by parser)
+                throw "Invalid Dictionary type";
             }
         }
         else {
-            throw new Error("Generator doesn't support type " + tp.kind + " yet");
+            // this case will only occur when a new type kind is introduced
+            throw "TODO: support type " + tp.kind;
         }
         if (tp.canBeNull) {
             typeRef += " | null";

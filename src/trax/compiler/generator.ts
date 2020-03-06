@@ -8,7 +8,7 @@ const PRIVATE_PREFIX = "ΔΔ",
 
 
 interface GeneratorOptions {
-    acceptMethods?: boolean;           // default:false
+    acceptMethods?: boolean;           // default:true
     replaceDataDecorator?: boolean;    // default:true
     interfaceTypes?: string[];         // list of type names that should be considered as interfaces (-> any type)
     symbols?: ParserSymbols,           // redefine the symbols used to identify Data objects
@@ -33,7 +33,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
     try {
         ast = parse(src, filePath, {
             symbols,
-            acceptMethods: options ? options.acceptMethods : false,
+            acceptMethods: options ? options.acceptMethods : true,
             interfaceTypes: options ? options.interfaceTypes : undefined
         });
         if (ast && ast.length) {
@@ -191,7 +191,8 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
                             defaultValues.push(`case "${prop.name}": return ${prop.defaultValue.text}`);
                         }
                     } else {
-                        error("Untyped property are not supported", n);
+                        // this case should not be reachable
+                        error("Invalid case", n);
                     }
                 } catch (ex) {
                     error(ex.message, n);
@@ -281,22 +282,22 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
                 factory = libPrefix + "Δlf(" + info.factory + ")";
                 addImport(libPrefix + "Δlf");
             } else {
-                throw new Error("Item type must be specified in Arrays");
+                // this case should not occur (caught by parser)
+                throw "Item type must be specified in Arrays";
             }
         } else if (tp.kind === "dictionary") {
-            if (!tp.indexType || tp.indexType!.kind !== "string") {
-                throw new Error("Dictionaries can only be indexed by strings");
-            }
             if (tp.itemType) {
                 let info = getTypeInfo(tp.itemType);
                 typeRef = "{ [" + tp.indexName! + ": string]: " + info.typeRef + " }";
                 factory = libPrefix + "Δdf(" + info.factory + ")";
                 addImport(libPrefix + "Δdf");
             } else {
-                throw new Error("Invalid item type");
+                // this case should not occur (caught by parser)
+                throw "Invalid Dictionary type";
             }
         } else {
-            throw new Error("Generator doesn't support type " + tp.kind + " yet");
+            // this case will only occur when a new type kind is introduced
+            throw "TODO: support type " + tp.kind;
         }
         if (tp.canBeNull) {
             typeRef += " | null";
