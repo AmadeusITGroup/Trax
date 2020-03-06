@@ -1,15 +1,10 @@
 import * as assert from 'assert';
-import { changeComplete, Data, version } from '../../trax';
+import { changeComplete, Data, version, hasParents } from '../../trax';
 
 describe('Dictionaries', () => {
 
     @Data class Person {
         name: string;
-    }
-
-    function hasParents(o: any) {
-        if (o['ΔMd'] && o['ΔMd'].parents) return true;
-        return false;
     }
 
     async function createDict() {

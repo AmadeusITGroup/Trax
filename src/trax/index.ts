@@ -8,7 +8,9 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_IS_PROXY = "ΔIsProxy",
     MP_DEFAULT = "ΔDefault",
     MP_CREATE_PROXY = "ΔCreateProxy",
-    MP_NEW_ITEM = "ΔnewItem";
+    MP_NEW_ITEM = "ΔnewItem",
+    MP_DISPOSE = "Δdispose",
+    RX_PROP_NAME = /^ΔΔ(.*)$/;
 
 let FORCE_CREATION = false;
 
@@ -221,8 +223,54 @@ export function version(o: any /*DataObject*/): number {
     return (o && o[MP_TRACKABLE] === true) ? o[MP_CHANGE_VERSION] : 0;
 }
 
-export function hasProperty(o: any /*TraxObject*/, propName: string): boolean {
-    return (o && typeof o === "object") ? ("ΔΔ" + propName) in o : false;
+export function dispose(traxObject: any /*DataObject*/, recursive = false) {
+    if (!isDataObject(traxObject)) return;
+    if (traxObject[MP_DISPOSE]) {
+        // traxObject is a collection that exposes Δdispose()
+        traxObject[MP_DISPOSE](recursive);
+    } else {
+        forEachProperty(traxObject, (k, o) => {
+            ΔDisconnectChildFromParent(traxObject, o);
+            traxObject["ΔΔ" + k] = undefined;
+            if (recursive) {
+                dispose(o, true);
+            }
+        });
+    }
+    const md = (traxObject as TraxObject).ΔMd;
+    if (md) {
+        // disconnect the traxObject from its own parents
+        const parents: any[] = [];
+        FA_forEach(md.parents, p => {
+            parents.push(p);
+        });
+        for (let p of parents) {
+            // we have to go through an intermediate array
+            // as ΔDisconnectChildFromParent changes the parents collection
+            forEachProperty(p, (name, internalValue) => {
+                if (internalValue === traxObject) {
+                    ΔDisconnectChildFromParent(p, traxObject);
+                    p["ΔΔ" + name] = undefined;
+                }
+            });
+            touch(p);
+        }
+    }
+}
+
+export function forEachProperty(traxObject: any /*TraxObject*/, processor: (propName: string, internalPropValue: any) => void) {
+    if (!isDataObject(traxObject)) return;
+    for (let k in traxObject) if (traxObject.hasOwnProperty(k) && k.match(RX_PROP_NAME)) {
+        processor(RegExp.$1, traxObject[k]);
+    }
+}
+
+export function hasProperty(traxObject: any /*TraxObject*/, propName: string): boolean {
+    return (traxObject && typeof traxObject === "object") ? ("ΔΔ" + propName) in traxObject : false;
+}
+
+export function hasParents(o: any) {
+    return (o['ΔMd'] && !!o['ΔMd'].parents);
 }
 
 export function isDataObject(o: any /*TraxObject*/): boolean {
@@ -707,7 +755,6 @@ export function ΔDisconnectChildFromParent(parent: TraxObject, child: TraxObjec
         // if child is immutable, it last version still holds the reference to the current parent
         let md = child.ΔMd;
         if (md && md.parents) {
-            // console.log("FA_removeItem:ΔDisconnectChildFromParent")
             md.parents = FA_removeItem(md.parents, parent);
         }
     }
@@ -916,10 +963,15 @@ class TraxList<T> implements TraxObject {
      * The TraxList shall not be used after calling this function
      * @return the array of list items
      */
-    Δdispose(): any[] {
-        let ls = this.ΔΔList, idx = ls.length;
+    Δdispose(recursive = false): any[] {
+        let ls = this.ΔΔList, idx = ls.length, itm: any;
         while (idx--) {
-            ΔDisconnectChildFromParent(this.ΔΔSelf, ls[idx]);
+            itm = ls[idx];
+            ΔDisconnectChildFromParent(this.ΔΔSelf, itm);
+            ls[idx] = undefined;
+            if (recursive) {
+                dispose(itm, true);
+            }
         }
         return ls;
     }
@@ -1084,10 +1136,15 @@ class TraxDict<T> implements TraxObject {
      * The TraxList shall not be used after calling this function
      * @return the dictionary object
      */
-    Δdispose(): { [name: string]: any } {
-        let d = this.ΔΔDict;
+    Δdispose(recursive = false): { [name: string]: any } {
+        let d = this.ΔΔDict, o: any;
         for (let k in d) if (d.hasOwnProperty(k)) {
-            ΔDisconnectChildFromParent(this.ΔΔSelf, d[k]);
+            o = d[k];
+            ΔDisconnectChildFromParent(this.ΔΔSelf, o);
+            d[k] = undefined;
+            if (recursive) {
+                dispose(o, true);
+            }
         }
         return d;
     }

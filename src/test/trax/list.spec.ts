@@ -298,21 +298,4 @@ describe('Lists', () => {
         assert.equal(isMutating(ls.list), false, "l is mutating");
         assert.equal(ls.list[0][0].value, "item 00", "first item can be retrieved (2)");
     });
-
-    it("should be disposed when not used any longer", async function () {
-        const dl = new DataList(), ls = dl.list,
-            nda = ls[0] = new TestNode(),
-            ndb = ls[1] = new TestNode();
-
-        nda.value = "a";
-        ndb.value = "b";
-        await changeComplete(ls);
-
-        assert.equal(ls[0]![MP_META_DATA].parents, ls[MP_SELF], "nda has a ls as parent");
-
-        const arr = ls["Δdispose"]();
-        assert.equal(arr.length, 2, "2 items returned");
-        assert.equal(arr[0].value, "a", "arr[0] is item a");
-        assert.deepEqual(arr[0][MP_META_DATA].parents, undefined, "nda a has no more parents");
-    });
 });
