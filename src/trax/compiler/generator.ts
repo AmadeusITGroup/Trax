@@ -170,6 +170,10 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
             if (m.kind === "property") {
                 try {
                     prop = m as DataProperty;
+                    if (m.shallowRef > 0) {
+                        // remove @ref reference
+                        replaceRegExp(/\@ref(\.depth\(\s*\d+\s*\))?\s*$/, "", prop.namePos);
+                    }
                     insert(PRIVATE_PREFIX, prop.namePos);
 
                     tp = prop.type;
@@ -218,7 +222,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
     }
 
     function propertyDefinition(m: DataMember, includePrivateDefinition = true): string {
-        let tp = m.type, { typeRef, factory } = getTypeInfo(tp), privateDef = "", nullUndefinedArg = "", questionSymbol = "";
+        let tp = m.type, { typeRef, factory } = getTypeInfo(tp, m.shallowRef || 1000), privateDef = "", nullUndefinedArg = "", questionSymbol = "";
         if (tp && (tp.canBeNull || tp.canBeUndefined)) {
             if (tp.canBeNull && tp.canBeUndefined) {
                 questionSymbol = "?";
@@ -246,51 +250,44 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
     }
 
 
-    function getTypeInfo(tp: DataType | undefined): { typeRef: string, factory: string } {
+    function getTypeInfo(tp: DataType | undefined, refDepth: number): { typeRef: string, factory: string } {
         let typeRef = "", factory = "";
         if (!tp) {
             return { typeRef: "any", factory: "" };
         }
-
         if (tp.kind === "any") {
             typeRef = "any";
             factory = "";
         } else if (tp.kind === "string") {
             typeRef = "string";
             factory = libPrefix + "ΔfStr";
-            addImport(factory);
         } else if (tp.kind === "number") {
             typeRef = "number";
             factory = libPrefix + "ΔfNbr";
-            addImport(factory);
         } else if (tp.kind === "boolean") {
             typeRef = "boolean";
             factory = libPrefix + "ΔfBool";
-            addImport(factory);
         } else if (tp.kind === "reference") {
             typeRef = tp.identifier;
             factory = libPrefix + "Δf(" + typeRef + ")";
-            addImport(libPrefix + "Δf");
         } else if (tp.kind === "array") {
             if (tp.itemType) {
-                let info = getTypeInfo(tp.itemType);
+                let info = getTypeInfo(tp.itemType, refDepth - 1);
                 if (info.typeRef.match(RX_NULL_TYPE)) {
                     typeRef = "(" + info.typeRef + ")[]";
                 } else {
                     typeRef = info.typeRef + "[]";
                 }
                 factory = libPrefix + "Δlf(" + info.factory + ")";
-                addImport(libPrefix + "Δlf");
             } else {
                 // this case should not occur (caught by parser)
                 throw "Item type must be specified in Arrays";
             }
         } else if (tp.kind === "dictionary") {
             if (tp.itemType) {
-                let info = getTypeInfo(tp.itemType);
+                let info = getTypeInfo(tp.itemType, refDepth - 1);
                 typeRef = "{ [" + tp.indexName! + ": string]: " + info.typeRef + " }";
                 factory = libPrefix + "Δdf(" + info.factory + ")";
-                addImport(libPrefix + "Δdf");
             } else {
                 // this case should not occur (caught by parser)
                 throw "Invalid Dictionary type";
@@ -301,6 +298,13 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         }
         if (tp.canBeNull) {
             typeRef += " | null";
+        }
+
+        if (refDepth <= 1) {
+            factory = "ΔfRef";
+            addImport("ΔfRef");
+        } else if (factory !== "" && factory.match(/^([^\(]+)/)) {
+            addImport(RegExp.$1);
         }
         return { typeRef, factory };
     }

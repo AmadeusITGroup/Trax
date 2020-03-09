@@ -31,7 +31,7 @@ export interface DataObject {
 export interface DataMember {
     name: string;
     type?: DataType;
-    shallowRef?: boolean;
+    shallowRef?: number;
     defaultValue?: CodeFragment;
 }
 
@@ -41,7 +41,8 @@ export interface DataProperty extends DataMember {
     namePos: number;
     end: number,
     type: DataType | undefined;
-    shallowRef: boolean;
+    shallowRef: number;
+    shallowRefPos: number;
     defaultValue?: CodeFragment;
 }
 

@@ -434,5 +434,29 @@ describe('Generator', () => {
         `, "2");
     });
 
+    it("should support @ref properties", async function () {
+        assert.equal(generate(`
+            import { Data } from "./trax";
+
+            @Data class Foo {
+                @ref data: string;
+                @ref person: NameHolder;
+                @ref.depth(2) persons: SomeInterface[];
+                @ref.depth(3) misc: SomeInterface[][];
+                @ref.depth(2) dict: {[k:string]: SomeInterface[]};
+            }
+        `, 'myFile.ts'), `
+            import { ΔD, ΔfRef, Δp, Δlf, Δdf } from "./trax";
+
+            @ΔD class Foo {
+                ΔΔdata: string; @Δp(ΔfRef) data: string;
+                ΔΔperson: NameHolder; @Δp(ΔfRef) person: NameHolder;
+                ΔΔpersons: SomeInterface[]; @Δp(Δlf(ΔfRef)) persons: SomeInterface[];
+                ΔΔmisc: SomeInterface[][]; @Δp(Δlf(Δlf(ΔfRef))) misc: SomeInterface[][];
+                ΔΔdict: {[k:string]: SomeInterface[]}; @Δp(Δdf(ΔfRef)) dict: { [k: string]: SomeInterface[] };
+            }
+        `, "1");
+    });
+
     // todo support import Data from "./trax" -> default import ?;
 });

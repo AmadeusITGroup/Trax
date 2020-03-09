@@ -53,7 +53,7 @@ function __generator(thisArg, body) {
     }
 }
 
-var LOG = "log", RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, SK = SyntaxKind;
+var LOG = "log", RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/, RX_LEAD_SPACE = /^(\s+)/, SK = SyntaxKind;
 function getSymbols(symbols) {
     var Data = "Data", ref = "ref", computed = "computed";
     if (!symbols) {
@@ -225,10 +225,12 @@ function parse(src, filePath, options) {
                     name: "",
                     namePos: 0,
                     end: m.end,
-                    shallowRef: hasRefDecorator(m),
+                    shallowRef: 0,
+                    shallowRefPos: 0,
                     type: undefined,
                     defaultValue: undefined
                 };
+                updateShallowRef(m, prop);
                 m.forEachChild(function (c) {
                     if (c.kind === SK.Identifier && !prop.name) {
                         prop.name = c.getText();
@@ -278,17 +280,27 @@ function parse(src, filePath, options) {
         }
         result.push(obj);
     }
-    function hasRefDecorator(m) {
+    function updateShallowRef(m, prop) {
         if (m.decorators) {
             var decorators = m.decorators, idx = decorators.length, d = void 0;
             while (idx--) {
                 d = decorators[idx];
-                var e = d.expression;
-                if (e.getText() === SYMBOLS.ref)
-                    return true;
+                var e = d.expression.getText();
+                if (e === SYMBOLS.ref) {
+                    prop.shallowRef = 1;
+                }
+                else if (e.match(RX_REF_DEPTH)) {
+                    prop.shallowRef = parseInt(RegExp.$1, 10);
+                }
+                if (prop.shallowRef) {
+                    prop.shallowRefPos = d.pos;
+                    if (d.getFullText().match(RX_LEAD_SPACE)) {
+                        prop.shallowRefPos += RegExp.$1.length;
+                    }
+                }
             }
         }
-        return false;
+        return 0;
     }
     function getTypeObject(n, raiseErrorIfInvalid, canBeUnion) {
         if (raiseErrorIfInvalid === void 0) { raiseErrorIfInvalid = false; }
@@ -614,6 +626,10 @@ function generate(src, filePath, options) {
             if (m.kind === "property") {
                 try {
                     prop = m;
+                    if (m.shallowRef > 0) {
+                        // remove @ref reference
+                        replaceRegExp(/\@ref(\.depth\(\s*\d+\s*\))?\s*$/, "", prop.namePos);
+                    }
                     insert(PRIVATE_PREFIX, prop.namePos);
                     tp = prop.type;
                     if (tp) {
@@ -661,7 +677,7 @@ function generate(src, filePath, options) {
     }
     function propertyDefinition(m, includePrivateDefinition) {
         if (includePrivateDefinition === void 0) { includePrivateDefinition = true; }
-        var tp = m.type, _a = getTypeInfo(tp), typeRef = _a.typeRef, factory = _a.factory, privateDef = "", nullUndefinedArg = "", questionSymbol = "";
+        var tp = m.type, _a = getTypeInfo(tp, m.shallowRef || 1000), typeRef = _a.typeRef, factory = _a.factory, privateDef = "", nullUndefinedArg = "", questionSymbol = "";
         if (tp && (tp.canBeNull || tp.canBeUndefined)) {
             if (tp.canBeNull && tp.canBeUndefined) {
                 questionSymbol = "?";
@@ -688,7 +704,7 @@ function generate(src, filePath, options) {
         }
         return privateDef + "@" + libPrefix + "\u0394p(" + factory + nullUndefinedArg + ") " + m.name + questionSymbol + ": " + typeRef + dv + ";";
     }
-    function getTypeInfo(tp) {
+    function getTypeInfo(tp, refDepth) {
         var typeRef = "", factory = "";
         if (!tp) {
             return { typeRef: "any", factory: "" };
@@ -700,26 +716,22 @@ function generate(src, filePath, options) {
         else if (tp.kind === "string") {
             typeRef = "string";
             factory = libPrefix + "ΔfStr";
-            addImport(factory);
         }
         else if (tp.kind === "number") {
             typeRef = "number";
             factory = libPrefix + "ΔfNbr";
-            addImport(factory);
         }
         else if (tp.kind === "boolean") {
             typeRef = "boolean";
             factory = libPrefix + "ΔfBool";
-            addImport(factory);
         }
         else if (tp.kind === "reference") {
             typeRef = tp.identifier;
             factory = libPrefix + "Δf(" + typeRef + ")";
-            addImport(libPrefix + "Δf");
         }
         else if (tp.kind === "array") {
             if (tp.itemType) {
-                var info = getTypeInfo(tp.itemType);
+                var info = getTypeInfo(tp.itemType, refDepth - 1);
                 if (info.typeRef.match(RX_NULL_TYPE)) {
                     typeRef = "(" + info.typeRef + ")[]";
                 }
@@ -727,7 +739,6 @@ function generate(src, filePath, options) {
                     typeRef = info.typeRef + "[]";
                 }
                 factory = libPrefix + "Δlf(" + info.factory + ")";
-                addImport(libPrefix + "Δlf");
             }
             else {
                 // this case should not occur (caught by parser)
@@ -736,10 +747,9 @@ function generate(src, filePath, options) {
         }
         else if (tp.kind === "dictionary") {
             if (tp.itemType) {
-                var info = getTypeInfo(tp.itemType);
+                var info = getTypeInfo(tp.itemType, refDepth - 1);
                 typeRef = "{ [" + tp.indexName + ": string]: " + info.typeRef + " }";
                 factory = libPrefix + "Δdf(" + info.factory + ")";
-                addImport(libPrefix + "Δdf");
             }
             else {
                 // this case should not occur (caught by parser)
@@ -752,6 +762,13 @@ function generate(src, filePath, options) {
         }
         if (tp.canBeNull) {
             typeRef += " | null";
+        }
+        if (refDepth <= 1) {
+            factory = "ΔfRef";
+            addImport("ΔfRef");
+        }
+        else if (factory !== "" && factory.match(/^([^\(]+)/)) {
+            addImport(RegExp.$1);
         }
         return { typeRef: typeRef, factory: factory };
     }

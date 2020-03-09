@@ -5,6 +5,8 @@ const LOG = "log",
     RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i,
     RX_LIST_PATTERN = /Array\s*\</,
     RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/,
+    RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/,
+    RX_LEAD_SPACE = /^(\s+)/,
     SK = ts.SyntaxKind;
 
 export interface ParserSymbols {
@@ -198,10 +200,13 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                     name: "",
                     namePos: 0,
                     end: m.end,
-                    shallowRef: hasRefDecorator(m),
+                    shallowRef: 0,
+                    shallowRefPos: 0,
                     type: undefined,
                     defaultValue: undefined
                 }, skipProperty = false;
+
+                updateShallowRef(m, prop);
 
                 m.forEachChild((c) => {
                     if (c.kind === SK.Identifier && !prop.name) {
@@ -246,16 +251,27 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
         result!.push(obj);
     }
 
-    function hasRefDecorator(m: ts.ClassElement): boolean {
+    function updateShallowRef(m: ts.ClassElement, prop: DataProperty): number {
         if (m.decorators) {
             let decorators = m.decorators, idx = decorators.length, d: ts.Decorator;
             while (idx--) {
                 d = decorators[idx];
-                let e = d.expression;
-                if (e.getText() === SYMBOLS.ref) return true
+                const e = d.expression.getText();
+
+                if (e === SYMBOLS.ref) {
+                    prop.shallowRef = 1;
+                } else if (e.match(RX_REF_DEPTH)) {
+                    prop.shallowRef = parseInt(RegExp.$1, 10);
+                }
+                if (prop.shallowRef) {
+                    prop.shallowRefPos = d.pos;
+                    if (d.getFullText().match(RX_LEAD_SPACE)) {
+                        prop.shallowRefPos += RegExp.$1.length;
+                    }
+                }
             }
         }
-        return false;
+        return 0;
     }
 
     function getTypeObject(n: ts.Node, raiseErrorIfInvalid = false, canBeUnion = true): DataType | null {

@@ -65,7 +65,8 @@ describe('Parser', () => {
                 "end": 163,
                 "namePos": 147,
                 "name": "street1",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "string"
                 }
@@ -75,7 +76,8 @@ describe('Parser', () => {
                 "end": 196,
                 "namePos": 180,
                 "name": "street2",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "string"
                 }
@@ -85,7 +87,8 @@ describe('Parser', () => {
                 "end": 229,
                 "namePos": 213,
                 "name": "zipCode",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "number"
                 }
@@ -95,7 +98,8 @@ describe('Parser', () => {
                 "end": 261,
                 "namePos": 246,
                 "name": "valid",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "boolean"
                 }
@@ -130,7 +134,8 @@ describe('Parser', () => {
                 "end": 98,
                 "namePos": 89,
                 "name": "bar",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "reference",
                     "identifier": "Bar"
@@ -141,7 +146,8 @@ describe('Parser', () => {
                 "end": 130,
                 "namePos": 115,
                 "name": "$content",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "identifier": "Blah",
                     "kind": "reference"
@@ -177,7 +183,8 @@ describe('Parser', () => {
                 "end": 100,
                 "namePos": 89,
                 "name": "bar",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "array",
                     "itemType": {
@@ -191,7 +198,8 @@ describe('Parser', () => {
                 "end": 131,
                 "namePos": 117,
                 "name": "blah",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "itemType": {
                         "itemType": {
@@ -232,7 +240,8 @@ describe('Parser', () => {
                 "end": 119,
                 "namePos": 89,
                 "name": "dict",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "dictionary",
                     "indexName": "k",
@@ -253,6 +262,8 @@ describe('Parser', () => {
             import { Data } from "./trax";
             @Data class Foo {
                 @ref bar: Bar;
+                @ref baz: Baz[][];
+                @ref.depth(2) blah: Blah[][];
             }
         `, "file1.ts");
 
@@ -274,10 +285,47 @@ describe('Parser', () => {
                 "end": 103,
                 "namePos": 94,
                 "name": "bar",
-                "shallowRef": true,
+                "shallowRef": 1,
+                "shallowRefPos": 89,
                 "type": {
                     "kind": "reference",
                     "identifier": "Bar"
+                }
+            }, {
+                "defaultValue": undefined,
+                "end": 138,
+                "kind": "property",
+                "name": "baz",
+                "namePos": 125,
+                "shallowRef": 1,
+                "shallowRefPos": 120,
+                "type": {
+                    "itemType": {
+                        "itemType": {
+                            "identifier": "Baz",
+                            "kind": "reference"
+                        },
+                        "kind": "array"
+                    },
+                    "kind": "array"
+                }
+            }, {
+                "defaultValue": undefined,
+                "end": 184,
+                "kind": "property",
+                "name": "blah",
+                "namePos": 169,
+                "shallowRef": 2,
+                "shallowRefPos": 155,
+                "type": {
+                    "itemType": {
+                        "itemType": {
+                            "identifier": "Blah",
+                            "kind": "reference"
+                        },
+                        "kind": "array"
+                    },
+                    "kind": "array"
                 }
             }]
         }], "1");
@@ -315,7 +363,8 @@ describe('Parser', () => {
                     "end": 126,
                     "namePos": 116,
                     "name": "bar",
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": { "kind": "number" }
                 },
                 {
@@ -324,7 +373,8 @@ describe('Parser', () => {
                     "end": 162,
                     "namePos": 143,
                     "name": "baz",
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": { "kind": "string" }
                 },
                 {
@@ -333,7 +383,8 @@ describe('Parser', () => {
                     "end": 192,
                     "namePos": 179,
                     "name": "bar2",
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": { "kind": "boolean" }
                 },
                 {
@@ -342,7 +393,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "bar3",
                     "namePos": 209,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "number"
                     }
@@ -353,7 +405,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "bar4",
                     "namePos": 238,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "any"
                     }
@@ -395,7 +448,8 @@ describe('Parser', () => {
                     "end": 127,
                     "namePos": 114,
                     "name": "prop",
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "string"
                     }
@@ -415,7 +469,8 @@ describe('Parser', () => {
                     "end": 202,
                     "namePos": 189,
                     "name": "prop",
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "string"
                     }
@@ -453,7 +508,8 @@ describe('Parser', () => {
                 "end": 172,
                 "namePos": 157,
                 "name": "street",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "string"
                 }
@@ -490,7 +546,8 @@ describe('Parser', () => {
                 "end": 163,
                 "namePos": 147,
                 "name": "foo",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "reference",
                     "identifier": "Bar",
@@ -530,7 +587,8 @@ describe('Parser', () => {
                 "end": 167,
                 "namePos": 147,
                 "name": "foo",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "array",
                     "itemType": {
@@ -575,7 +633,8 @@ describe('Parser', () => {
                 "end": 156,
                 "namePos": 147,
                 "name": "foo",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "any"
                 }
@@ -585,7 +644,8 @@ describe('Parser', () => {
                 "end": 177,
                 "namePos": 173,
                 "name": "bar",
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "any"
                 }
@@ -595,7 +655,8 @@ describe('Parser', () => {
                 "kind": "property",
                 "name": "baz",
                 "namePos": 194,
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "itemType": {
                         "kind": "any"
@@ -640,7 +701,8 @@ describe('Parser', () => {
                 "kind": "property",
                 "name": "bar",
                 "namePos": 89,
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "kind": "any"
                 }
@@ -656,7 +718,8 @@ describe('Parser', () => {
                 "kind": "property",
                 "name": "baz",
                 "namePos": 122,
-                "shallowRef": false,
+                "shallowRef": 0,
+                "shallowRefPos": 0,
                 "type": {
                     "identifier": "Bar",
                     "kind": "reference"
@@ -697,7 +760,8 @@ describe('Parser', () => {
                         "kind": "property",
                         "name": "bar",
                         "namePos": 89,
-                        "shallowRef": false,
+                        "shallowRef": 0,
+                        "shallowRefPos": 0,
                         "type": {
                             "itemType": {
                                 "kind": "number"
@@ -742,7 +806,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "list",
                     "namePos": 89,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "array",
                         "canBeUndefined": true,
@@ -789,7 +854,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "list",
                     "namePos": 89,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "array",
                         "canBeUndefined": true,
@@ -841,7 +907,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "foo",
                     "namePos": 89,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "canBeNull": true,
                         "canBeUndefined": false,
@@ -861,7 +928,8 @@ describe('Parser', () => {
                     "kind": "property",
                     "name": "bar",
                     "namePos": 129,
-                    "shallowRef": false,
+                    "shallowRef": 0,
+                    "shallowRefPos": 0,
                     "type": {
                         "kind": "any"
                     }
@@ -870,4 +938,5 @@ describe('Parser', () => {
             "pos": 42
         }], "1");
     })
+
 });

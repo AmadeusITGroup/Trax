@@ -127,12 +127,30 @@ export function Data(c: any) { } // empty: will be replaced at compilation time
  */
 export function log(c: any) { }
 
-// TODO
-export function ref(proto, key: string) {
+/**
+ * Decorator to express that a property should be tracked as a reference only
+ * i.e. if the property refers to an object if on of the object property changes, 
+ * the object will not be considered as change.
+ * This should be used for read-only sub-graphs that will not change
+ * This must also be used for types expressed as interfaces
+ * @param proto 
+ * @param key 
+ */
+function refDeco(proto: any, key: string) { }
+(refDeco as any).depth = function () { return function () { } };
 
-}
+export const ref = (refDeco as {
+    (proto: any, key: string): void;
+    depth: (depth: number) => ((proto: any, key: string) => void);
+});
 
-export function computed(proto, propName: string, descriptor: PropertyDescriptor) {
+/**
+ * Decorator to express properties calculated from other properties
+ * @param proto 
+ * @param propName 
+ * @param descriptor 
+ */
+export function computed(proto: any, propName: string, descriptor: PropertyDescriptor) {
     // we must wrap the getter with a new getter that will ensure the memoization
     let processor: Function = descriptor.get!, ΔΔPropName = "ΔΔ" + propName;
     if (!descriptor.get || descriptor.set !== undefined) {
@@ -501,31 +519,32 @@ export function Δf<T>(dataObjectClassRef: Constructor<T>): Factory<T> {
  */
 function $fStr() { return "" }
 $fStr[MP_IS_FACTORY] = true;
-export let ΔfStr: Factory<string> = $fStr as Factory<string>;
+export const ΔfStr: Factory<string> = $fStr as Factory<string>;
 
 /**
  * Factory function for numbers
  */
 function $fNbr() { return 0 }
 $fNbr[MP_IS_FACTORY] = true;
-export let ΔfNbr: Factory<number> = $fNbr as Factory<number>;
+export const ΔfNbr: Factory<number> = $fNbr as Factory<number>;
 
 /**
  * Factory function for booleans
  */
 function $fBool() { return false }
 $fBool[MP_IS_FACTORY] = true;
-export let ΔfBool: Factory<boolean> = $fBool as Factory<boolean>;
+export const ΔfBool: Factory<boolean> = $fBool as Factory<boolean>;
 
 /**
  * Factory function for null (!)
  */
 function $fNull() { return null }
 $fNull[MP_IS_FACTORY] = true;
-export let ΔfNull: Factory<null> = $fNull as Factory<null>;
+export const ΔfNull: Factory<null> = $fNull as Factory<null>;
 
 function $fUndefined() { return undefined };
 $fUndefined[MP_IS_FACTORY] = true;
+export const ΔfRef: Factory<undefined> = $fUndefined as Factory<undefined>;
 
 /**
  * Fills a proto info structure with some more property description
@@ -650,13 +669,14 @@ function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory
  */
 function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string | number, newValue: any, factory: Factory<T>, propHolder: any) {
     let isTraxValue = isDataObject(newValue);
+    const isRef = (factory as any) === ΔfRef;
 
     if (o.ΔComputeDependencies) {
         console.error("[Trax] @computed properties must not mutate the Data object when calculated");
         return;
     }
 
-    // console.log("ΔSet", propName, "=", newValue)
+    // console.log("ΔSet", propName, "=", newValue, isRef)
 
     if (newValue && !isTraxValue && factory.ΔCreateProxy) {
         newValue = factory.ΔCreateProxy(newValue) || newValue;
@@ -680,7 +700,7 @@ function ΔSet<T>(o: TraxObject, propName: string | number, ΔΔPropName: string
         }
 
         if (isTraxValue || (currentValue && isDataObject(currentValue))) {
-            updateSubDataRefs(o, currentValue, newValue as TraxObject);
+            updateSubDataRefs(o, currentValue, newValue as TraxObject, isRef);
         }
         propHolder[ΔΔPropName] = newValue;
 
@@ -737,11 +757,13 @@ export function touch(o: TraxObject) {
  * @param currentChild 
  * @param newChild 
  */
-function updateSubDataRefs(o: TraxObject, currentChild: TraxObject | null, newChild: TraxObject | null) {
+function updateSubDataRefs(o: TraxObject, currentChild: TraxObject | null, newChild: TraxObject | null, isRef:boolean) {
     // remove parent ref from old ref
     ΔDisconnectChildFromParent(o, currentChild);
     // add parent ref to new ref
-    ΔConnectChildToParent(o, newChild);
+    if (!isRef) {
+        ΔConnectChildToParent(o, newChild);
+    }
 }
 
 /**

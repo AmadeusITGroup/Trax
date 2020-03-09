@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as fx from "./fixture";
 import { isMutating, reset, changeComplete } from '../../trax';
 
-describe('Computed props', () => {
+describe('@computed', () => {
 
     it('should work for simple types', async function () {
         let initCount = fx.processLengthCounter,

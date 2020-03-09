@@ -6,3 +6,4 @@ import "./utilities.spec";
 import "./computed.spec";
 import "./todo.spec";
 import "./dispose.spec";
+import "./ref.spec";
