@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList } from "./fixture";
-import { isMutating, changeComplete, version, Data, create, reset, hasProperty, track, untrack } from '../../trax';
+import { isMutating, changeComplete, version, Data, createProperty, reset, hasProperty, track, untrack } from '../../trax';
 
 describe('Trax utilities', () => {
 
@@ -36,28 +36,28 @@ describe('Trax utilities', () => {
         }
         let d = new TestData(), v: any;
         assert.equal(d.prop, undefined, "initial prop is undefined");
-        v = create(d, "prop");
+        v = createProperty(d, "prop");
         assert.equal(v, 0, "0");
         assert.equal(v, d.prop, "v===d.prop");
 
         assert.equal(d.node, undefined, "initial node is undefined");
-        v = create(d, "node");
+        v = createProperty(d, "node");
         assert.notEqual(v, undefined, "node is defined");
         assert.equal(v.value, "v1", "v1");
         assert.equal(v, d.node, "v===d.node");
 
         assert.equal(d.value, null, "value is null");
-        v = create(d, "value");
+        v = createProperty(d, "value");
         assert.equal(v, "", "empty string created");
         assert.equal(d.value, v, "d.value === v");
 
         assert.equal(d.list, undefined, "list is undefined");
-        let list = create(d, "list");
+        let list = createProperty(d, "list");
         assert.equal(list.length, 0, "empty list created");
         assert.equal(list, d.list, "d.list === list");
 
         assert.equal(list[0], undefined, "list[0] is undefined");
-        let item = create(list, 0);
+        let item = createProperty(list, 0);
         assert.equal(item.value, "v1", "item has been created");
         assert.equal(list[0], item, "list[0] === item");
     });

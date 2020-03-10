@@ -391,7 +391,7 @@ export function untrack(o: any, trackFn: TrackFunction) {
  * @param propName the property name
  * @returns the new property value
  */
-export function create(o: any, propName: string | number): any {
+export function createProperty(o: any, propName: string | number): any {
     if (o && propName !== undefined) {
         if (o[MP_NEW_ITEM]) {
             return o[MP_NEW_ITEM](propName);
@@ -515,6 +515,9 @@ function convertFactory() {
 
 export const convertToJson = convertFactory();
 
+// export function init<T>(c: Constructor<T> | Factory<T>, json: Object) {
+//     return null; //createProperty(c, json);
+// }
 // -----------------------------------------------------------------------------------------------------------------------------
 // trax private apis (generated code)
 
