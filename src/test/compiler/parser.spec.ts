@@ -485,7 +485,8 @@ describe('Parser', () => {
             import { Data, log } from "./trax";
             let foo = "bar";
 
-            @Data @log class Address {
+            @Data class Address {
+                // log
                 street: string;
             }
         `, "file1.ts");
@@ -498,15 +499,15 @@ describe('Parser', () => {
         }, {
             "kind": "data",
             "className": "Address",
-            "classNameEnd": 138,
+            "classNameEnd": 133,
             "pos": 100,
             "decoPos": 114,
             "log": true,
             "members": [{
                 "kind": "property",
                 "defaultValue": undefined,
-                "end": 172,
-                "namePos": 157,
+                "end": 190,
+                "namePos": 175,
                 "name": "street",
                 "shallowRef": 0,
                 "shallowRefPos": 0,

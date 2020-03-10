@@ -1,7 +1,7 @@
 import { TraxImport, DataObject, DataProperty, DataType, TraxError } from './types';
 import * as ts from "typescript";
 
-const LOG = "log",
+const RX_LOG = /\/\/\s*log[\s$]/,
     RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i,
     RX_LIST_PATTERN = /Array\s*\</,
     RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/,
@@ -148,8 +148,10 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                         // comment the dataset expression to remove it from generated code (and don't impact line numbers)
                         // this.insert("/* ", d.expression.pos - 1);
                         // this.insert(" */", d.expression.end);
-                    } else if (d.expression.getText() === LOG) {
-                        printLogs = true;
+
+                        if (node.getFullText().match(RX_LOG)) {
+                            printLogs = true;
+                        }
                     }
                 }
             }

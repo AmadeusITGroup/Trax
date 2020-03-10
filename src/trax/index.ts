@@ -121,12 +121,6 @@ function FA_addItem<T>(a: FlexArray<T>, item: T): FlexArray<T> {
  */
 export function Data(c: any) { } // empty: will be replaced at compilation time
 
-/** 
- * Debug utility to print the generated class on the standard output
- * e.g. @Data @log MyData {}
- */
-export function log(c: any) { }
-
 /**
  * Decorator to express that a property should be tracked as a reference only
  * i.e. if the property refers to an object if on of the object property changes, 

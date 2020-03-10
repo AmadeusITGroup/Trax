@@ -2,7 +2,7 @@ import { parse, ParserSymbols, getSymbols, getLineInfo } from './parser';
 import { DataObject, TraxImport, DataProperty, DataType, DataMember, TraxError } from './types';
 
 const PRIVATE_PREFIX = "ΔΔ",
-    CLASS_DECO = "ΔD", RX_LOG = /\/\/\s*trax\:\s*log/,
+    CLASS_DECO = "ΔD",
     RX_NULL_TYPE = /\|\s*null$/,
     SEPARATOR = "----------------------------------------------------------------------------------------------------";
 
@@ -28,6 +28,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         traxImport: TraxImport,
         importList: string[] = [], // list of new imports
         importDict: { [key: string]: 1 },
+        logOutput = false,
         importDictForced: { [key: string]: 1 } = {};
 
     try {
@@ -39,12 +40,16 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         if (ast && ast.length) {
             initImports(ast);
 
-            let len = ast.length;
+            let len = ast.length, d:DataObject;
             for (let i = 1; len > i; i++) {
                 if (ast[i].kind === "import") {
                     error("Duplicate Data import", ast[i]);
                 } else {
-                    processDataObject(ast[i] as DataObject);
+                    d = ast[i] as DataObject;
+                    processDataObject(d);
+                    if (d.log) {
+                        logOutput;
+                    }
                 }
             }
             updateImports();
@@ -65,7 +70,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
         throw e;
     }
 
-    if (src.match(RX_LOG)) {
+    if (logOutput) {
         console.log(SEPARATOR);
         console.log("Trax Output:");
         console.log(output);

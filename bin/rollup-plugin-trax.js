@@ -53,7 +53,7 @@ function __generator(thisArg, body) {
     }
 }
 
-var LOG = "log", RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/, RX_LEAD_SPACE = /^(\s+)/, SK = SyntaxKind;
+var RX_LOG = /\/\/\s*log[\s$]/, RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/, RX_LEAD_SPACE = /^(\s+)/, SK = SyntaxKind;
 function getSymbols(symbols) {
     var Data = "Data", ref = "ref", computed = "computed";
     if (!symbols) {
@@ -170,9 +170,9 @@ function parse(src, filePath, options) {
                         // comment the dataset expression to remove it from generated code (and don't impact line numbers)
                         // this.insert("/* ", d.expression.pos - 1);
                         // this.insert(" */", d.expression.end);
-                    }
-                    else if (d.expression.getText() === LOG) {
-                        printLogs = true;
+                        if (node.getFullText().match(RX_LOG)) {
+                            printLogs = true;
+                        }
                     }
                 }
             }
@@ -495,11 +495,11 @@ function getLineInfo(src, pos) {
     };
 }
 
-var PRIVATE_PREFIX = "ΔΔ", CLASS_DECO = "ΔD", RX_LOG = /\/\/\s*trax\:\s*log/, RX_NULL_TYPE = /\|\s*null$/, SEPARATOR = "----------------------------------------------------------------------------------------------------";
+var PRIVATE_PREFIX = "ΔΔ", CLASS_DECO = "ΔD", RX_NULL_TYPE = /\|\s*null$/, SEPARATOR = "----------------------------------------------------------------------------------------------------";
 function generate(src, filePath, options) {
     var symbols = getSymbols(options ? options.symbols : undefined), libPrefix = options ? (options.libPrefix || "") : "", logErrors = options ? (options.logErrors !== false) : true;
     var output = src, outputShift = 0, ast, traxImport, importList = [], // list of new imports
-    importDict, importDictForced = {};
+    importDict, logOutput = false, importDictForced = {};
     try {
         ast = parse(src, filePath, {
             symbols: symbols,
@@ -508,13 +508,17 @@ function generate(src, filePath, options) {
         });
         if (ast && ast.length) {
             initImports(ast);
-            var len = ast.length;
+            var len = ast.length, d = void 0;
             for (var i = 1; len > i; i++) {
                 if (ast[i].kind === "import") {
                     error("Duplicate Data import", ast[i]);
                 }
                 else {
-                    processDataObject(ast[i]);
+                    d = ast[i];
+                    processDataObject(d);
+                    if (d.log) {
+                        logOutput;
+                    }
                 }
             }
             updateImports();
@@ -535,11 +539,6 @@ function generate(src, filePath, options) {
             console.error("\n" + SEPARATOR + "\n" + msg + "\n" + SEPARATOR);
         }
         throw e;
-    }
-    if (src.match(RX_LOG)) {
-        console.log(SEPARATOR);
-        console.log("Trax Output:");
-        console.log(output);
     }
     return output;
     function error(msg, node) {
