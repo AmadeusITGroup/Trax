@@ -147,11 +147,6 @@ export const ref = (refDeco as {
 export function computed(proto: any, propName: string, descriptor: PropertyDescriptor) {
     // we must wrap the getter with a new getter that will ensure the memoization
     let processor: Function = descriptor.get!, ΔΔPropName = "ΔΔ" + propName;
-    if (!descriptor.get || descriptor.set !== undefined) {
-        console.error("[Trax] @computed properties must be defined on property getters only");
-        return;
-    }
-    descriptor.set = undefined;
     descriptor.get = function () {
         if (!isDataObject(this)) {
             console.error("[Trax] @computed properties can only be used on Data objects");

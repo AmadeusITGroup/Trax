@@ -182,13 +182,15 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                 if (m.kind === SK.Constructor) {
                     error("Constructors are not authorized in Data objects", m["body"] || m);
                 } else if (m.kind === SK.GetAccessor) {
+                    // getter
                     // check @computed properties
                     if (m.decorators && m.decorators.length === 1) {
                         if (m.decorators[0].getText() === "@computed") continue;
                     }
-                    error("Getters can only be used for @computer properties", m);
+                    continue; // ok
                 } else if (m.kind === SK.SetAccessor) {
-                    error("Setters are not supported in trax objects", m);
+                    // setter
+                    continue; // ok
                 } else if (m.kind === SK.MethodDeclaration) {
                     if (options && options.acceptMethods) continue;
                     error("Methods cannot be defined in this object", m);

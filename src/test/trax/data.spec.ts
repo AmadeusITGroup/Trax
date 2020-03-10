@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount, TestNode3 } from "./fixture";
-import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data } from '../../trax';
+import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data, computed } from '../../trax';
 
 describe('Data objects', () => {
     const MP_META_DATA = "ΔMd", MP_VERSION = "ΔChangeVersion";
@@ -426,4 +426,47 @@ describe('Data objects', () => {
         assert.equal(n2.arr1[0], 1, "arr1[0] is 1");
     });
 
+    it("should support methods, getters and setters", async function () {
+        @Data class Book {
+            title: string;
+            author: string;
+            someFunc: (arg: any) => void;
+
+            isAuthor(author: string) {
+                return this.author === author;
+            }
+
+            set description(value: string) {
+                const arr = value.split(/\s*\-\s*/);
+                if (arr.length === 2) {
+                    this.title = arr[0];
+                    this.author = arr[1];
+                }
+            }
+
+            get description(): string {
+                return `${this.title} - ${this.author}`;
+            }
+        }
+
+        const b = new Book();
+        b.title = "Hard-boiled wonderland and the end of the world";
+        b.author = "Haruki Murakami";
+
+        await changeComplete(b);
+        assert.equal(version(b), 2, "b version 2");
+        assert.equal(b.description, "Hard-boiled wonderland and the end of the world - Haruki Murakami", "get description");
+        assert.equal(version(b), 2, "b version 2");
+
+        b.description = "The three body problem - Liu Cixin";
+        assert.equal(version(b), 3, "b version 3");
+        assert.equal(b.author, "Liu Cixin", "new author");
+
+        assert.equal(b.isAuthor("Liu Cixin"), true, "method call");
+
+        await changeComplete(b);
+        assert.equal(version(b), 4, "b version 4");
+        b.someFunc = function (x) { return x };
+        assert.equal(version(b), 5, "b version 5"); // reference change
+    });
 });

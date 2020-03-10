@@ -44,36 +44,6 @@ describe('Compilation errors', () => {
         assert.equal(error(`
             import { Data } from 'trax';
             @Data class Foo {
-                p = 123;
-
-                get value() {
-                    return true;
-                }
-            }
-        `), `
-            TRAX: Getters can only be used for @computer properties
-            File: file.ts - Line 6 / Col 17
-            Extract: >> get value() { <<
-        `, "3");
-
-        assert.equal(error(`
-            import { Data } from 'trax';
-            @Data class Foo {
-                p = 123;
-
-                set value(v) {
-                    this.p = v;
-                }
-            }
-        `), `
-            TRAX: Setters are not supported in trax objects
-            File: file.ts - Line 6 / Col 17
-            Extract: >> set value(v) { <<
-        `, "4");
-
-        assert.equal(error(`
-            import { Data } from 'trax';
-            @Data class Foo {
                 prop:boolean;
 
                 foo() {
@@ -84,7 +54,7 @@ describe('Compilation errors', () => {
             TRAX: Methods cannot be defined in this object
             File: file.ts - Line 6 / Col 17
             Extract: >> foo() { <<
-        `, "5");
+        `, "3");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -96,7 +66,7 @@ describe('Compilation errors', () => {
             TRAX: Unsupported use case [182]
             File: file.ts - Line 5 / Col 22
             Extract: >> bar: "abc"; <<
-        `, "6");
+        `, "4");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -108,7 +78,7 @@ describe('Compilation errors', () => {
             TRAX: Multiple data types are not supported
             File: file.ts - Line 5 / Col 22
             Extract: >> bar: Bar | Baz; <<
-        `, "7");
+        `, "5");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -120,7 +90,7 @@ describe('Compilation errors', () => {
             TRAX: Unsupported type
             File: file.ts - Line 5 / Col 28
             Extract: >> bar: Bar | "abc"; <<
-        `, "8");
+        `, "6");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -131,7 +101,7 @@ describe('Compilation errors', () => {
             TRAX: Dictionaries can only be indexed by strings
             File: file.ts - Line 4 / Col 23
             Extract: >> dict: {[k:Bar]: string}; <<
-        `, "9");
+        `, "7");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -142,7 +112,7 @@ describe('Compilation errors', () => {
             TRAX: Array collections must be defined through the xxx[] notation
             File: file.ts - Line 4 / Col 23
             Extract: >> list: Array<string>; <<
-        `, "10");
+        `, "8");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -153,7 +123,7 @@ describe('Compilation errors', () => {
             TRAX: Maps and Sets are not supported. Please use Dictionary Objects instead
             File: file.ts - Line 4 / Col 23
             Extract: >> dict: Map<string>; <<
-        `, "11");
+        `, "9");
 
         assert.equal(error(`
             import { Data } from 'trax';
@@ -164,7 +134,7 @@ describe('Compilation errors', () => {
             TRAX: Maps and Sets are not supported. Please use Dictionary Objects instead
             File: file.ts - Line 4 / Col 23
             Extract: >> dict: WeakSet<string>; <<
-        `, "12");
+        `, "10");
     });
 
     it("should forward typescript parsing errors", function () {

@@ -48,7 +48,7 @@ export function generate(src: string, filePath: string, options?: GeneratorOptio
                     d = ast[i] as DataObject;
                     processDataObject(d);
                     if (d.log) {
-                        logOutput;
+                        logOutput = true;
                     }
                 }
             }

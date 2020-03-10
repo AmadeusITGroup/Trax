@@ -201,15 +201,16 @@ function parse(src, filePath, options) {
                     error("Constructors are not authorized in Data objects", m["body"] || m);
                 }
                 else if (m.kind === SK.GetAccessor) {
+                    // getter
                     // check @computed properties
                     if (m.decorators && m.decorators.length === 1) {
                         if (m.decorators[0].getText() === "@computed")
                             return "continue";
                     }
-                    error("Getters can only be used for @computer properties", m);
+                    return "continue";
                 }
                 else if (m.kind === SK.SetAccessor) {
-                    error("Setters are not supported in trax objects", m);
+                    return "continue";
                 }
                 else if (m.kind === SK.MethodDeclaration) {
                     if (options && options.acceptMethods)
@@ -517,7 +518,7 @@ function generate(src, filePath, options) {
                     d = ast[i];
                     processDataObject(d);
                     if (d.log) {
-                        logOutput;
+                        logOutput = true;
                     }
                 }
             }
@@ -539,6 +540,11 @@ function generate(src, filePath, options) {
             console.error("\n" + SEPARATOR + "\n" + msg + "\n" + SEPARATOR);
         }
         throw e;
+    }
+    if (logOutput) {
+        console.log(SEPARATOR);
+        console.log("Trax Output:");
+        console.log(output);
     }
     return output;
     function error(msg, node) {
