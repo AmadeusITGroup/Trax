@@ -7,3 +7,4 @@ import "./computed.spec";
 import "./todo.spec";
 import "./dispose.spec";
 import "./ref.spec";
+import "./convertToJson.spec";

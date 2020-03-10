@@ -430,6 +430,91 @@ export function reset(o: any, propName: string): any {
     return undefined;
 }
 
+export interface JSConversionContext {
+    getDefaultConversion(): any;
+    getPreviousConversion(): any;
+}
+
+export interface JSConverter {
+    (obj: any, cc: JSConversionContext): any;
+}
+
+function convertFactory() {
+    let processedNodes: any[] = [],
+        stack: any[] = [],
+        ds: any,
+        currentConverter: JSConverter | undefined;
+
+    let cc: JSConversionContext = {
+        getDefaultConversion() {
+            return defaultConverter(ds, cc);
+        },
+        getPreviousConversion() {
+            return ds.ΔtoJsResult;
+        }
+    }
+
+    function defaultConverter(o: any, cc: JSConversionContext) {
+        let pc = cc.getPreviousConversion();
+        if (pc) {
+            return pc; // use the same conversion if the object has already been converted (avoid infinite loops)
+        }
+        let res: any = undefined;
+        if (o.Δconvert) {
+            // for lists and dictionaries
+            res = o.Δconvert(currentConverter);
+        } else {
+            res = {};
+            forEachProperty(o, (propName: string, value: any) => {
+                if (isDataObject(value)) {
+                    value = convert2JS(value, currentConverter);
+                }
+                if (value !== undefined) {
+                    res[propName] = value;
+                }
+            });
+        }
+        return res;
+    }
+
+    function convert2JS(d: any, converter?: JSConverter): any {
+        let isFirst = (processedNodes.length === 0), result: any = d;
+
+        if (d && isDataObject(d)) {
+            processedNodes.push(d);
+
+            result = undefined;
+            stack.push(d);
+            ds = d;
+            if (converter) {
+                currentConverter = converter;
+                result = converter(d, cc);
+            } else {
+                result = defaultConverter(d, cc);
+            }
+            d.ΔtoJsResult = result; // cache of previous result - will be removed at the end of the conversion
+            stack.pop();
+            ds = stack[stack.length - 1];
+        }
+
+        if (isFirst) {
+            // remove ΔtoJsResult prop on all nodes
+            let idx = processedNodes.length;
+            while (idx--) {
+                processedNodes[idx]["ΔtoJsResult"] = undefined;
+            }
+            // cleanup context variables
+            ds = null;
+            processedNodes = [];
+            currentConverter = undefined;
+        }
+        return result;
+    }
+    return convert2JS;
+}
+
+export const convertToJson = convertFactory();
+
 // -----------------------------------------------------------------------------------------------------------------------------
 // trax private apis (generated code)
 
@@ -746,7 +831,7 @@ export function touch(o: TraxObject) {
  * @param currentChild 
  * @param newChild 
  */
-function updateSubDataRefs(o: TraxObject, currentChild: TraxObject | null, newChild: TraxObject | null, isRef:boolean) {
+function updateSubDataRefs(o: TraxObject, currentChild: TraxObject | null, newChild: TraxObject | null, isRef: boolean) {
     // remove parent ref from old ref
     ΔDisconnectChildFromParent(o, currentChild);
     // add parent ref to new ref
@@ -975,7 +1060,8 @@ class TraxList<T> implements TraxObject {
      * @return the array of list items
      */
     Δdispose(recursive = false): any[] {
-        let ls = this.ΔΔList, idx = ls.length, itm: any;
+        const ls = this.ΔΔList;
+        let idx = ls.length, itm: any;
         while (idx--) {
             itm = ls[idx];
             ΔDisconnectChildFromParent(this.ΔΔSelf, itm);
@@ -985,6 +1071,15 @@ class TraxList<T> implements TraxObject {
             }
         }
         return ls;
+    }
+
+    Δconvert(converter?: JSConverter) {
+        const res: any[] = [], arr = this.ΔΔList;
+        let idx = arr.length;
+        while (idx--) {
+            res[idx] = convertToJson(arr[idx], converter);
+        }
+        return res;
     }
 
     ΔToString() {
@@ -1158,6 +1253,14 @@ class TraxDict<T> implements TraxObject {
             }
         }
         return d;
+    }
+
+    Δconvert(converter?: JSConverter) {
+        const res: any = {}, dict = this.ΔΔDict;
+        for (let k in dict) if (dict.hasOwnProperty(k)) {
+            res[k] = convertToJson(dict[k], converter);
+        }
+        return res;
     }
 
     ΔToString() {
