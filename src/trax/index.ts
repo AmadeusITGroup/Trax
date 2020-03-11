@@ -10,6 +10,7 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_CREATE_PROXY = "ΔCreateProxy",
     MP_NEW_ITEM = "ΔnewItem",
     MP_DISPOSE = "Δdispose",
+    MP_JSON = "Δjson",
     RX_PROP_NAME = /^ΔΔ(.*)$/;
 
 let FORCE_CREATION = false;
@@ -36,7 +37,7 @@ export interface Constructor<T> {
 export interface Factory<T> {
     ΔIsFactory: true;
     ΔCreateProxy?: (v: any) => TraxObject | null;
-    (json?: Object): T;
+    (): T;
 }
 
 function initMetaData(o: TraxObject): TraxMetaData | null {
@@ -51,7 +52,7 @@ function initMetaData(o: TraxObject): TraxMetaData | null {
     return o.ΔMd;
 }
 // -----------------------------------------------------------------------------------------------------------------------------
-// Soft Array functions
+// Flex Array functions
 
 // The purpose of FlexArray is to avoid the creation of an Array when we don't need it in most cases (here in 95% of cases)
 type FlexArray<T> = T | T[] | undefined;
@@ -265,11 +266,15 @@ export function dispose(traxObject: any /*DataObject*/, recursive = false) {
     }
 }
 
-export function forEachProperty(traxObject: any /*TraxObject*/, processor: (propName: string, internalPropValue: any) => void) {
+export function forEachProperty(traxObject: any /*TraxObject*/, processor: (propName: string, internalValue: any, factory: Factory<any>) => void) {
     if (!isDataObject(traxObject)) return;
-    for (let k in traxObject) if (traxObject.hasOwnProperty(k) && k.match(RX_PROP_NAME)) {
-        processor(RegExp.$1, traxObject[k]);
+    const factories = traxObject.constructor.prototype["ΔDefFactories"];
+    for (let k in factories) if (factories.hasOwnProperty(k)) {
+        processor(k, traxObject["ΔΔ" + k], factories[k]);
     }
+    // for (let k in traxObject) if (traxObject.hasOwnProperty(k) && k.match(RX_PROP_NAME)) {
+    //     processor(RegExp.$1, traxObject[k]);
+    // }
 }
 
 export function hasProperty(traxObject: any /*TraxObject*/, propName: string): boolean {
@@ -463,6 +468,8 @@ function convertFactory() {
         if (o.Δconvert) {
             // for lists and dictionaries
             res = o.Δconvert(currentConverter);
+        } else if (o["Δjson"]) {
+            return o["Δjson"];
         } else {
             res = {};
             forEachProperty(o, (propName: string, value: any) => {
@@ -515,9 +522,76 @@ function convertFactory() {
 
 export const convertToJson = convertFactory();
 
-// export function init<T>(c: Constructor<T> | Factory<T>, json: Object) {
-//     return null; //createProperty(c, json);
-// }
+
+/**
+ * Create a trax object instance from a JSON object that use the same key-values as the data set properties
+ * The data will actually be lazy-loaded so that the json object will only be read when the
+ * equivalent property is read on the data node instance
+ * Note: the returned dataset will be initialized with the json data and will be considered as mutable, with no on-going mutations
+ * @param c the @Data object constructor (i.e. class reference)
+ * @param json the json data to feed in the data node
+ * @return the new object instance
+ */
+export function create<T>(c: Constructor<T> | Factory<T>, json?: Object): T {
+    let d: any;
+
+    if ((c as Factory<T>).ΔIsFactory) {
+        d = (c as Factory<T>)();
+    } else {
+        d = new (c as Constructor<T>)();
+        if (!isDataObject(d)) {
+            console.error("[TRAX:create] Constructor argument doesn't correspond to a Trax Object");
+        }
+    }
+    initObject(d, json);
+    return d;
+}
+
+function initObject(o: any /* Trax object */, json: any) {
+    if (json) {
+        let val: any, ΔΔpropName: string;
+        forEachProperty(o, (propName: string, value: any, factory) => {
+            const isRef = factory === ΔfRef;
+            val = json[propName];
+            ΔΔpropName = "ΔΔ" + propName;
+            if (val === undefined) {
+                if (isRef) {
+                    o[ΔΔpropName] = undefined;
+                }
+            } else {
+                const tp = typeof (val);
+                if (val === null) {
+                    if (isRef || factory === ΔfNull) {
+                        o[ΔΔpropName] = null;
+                    }
+                } else if (tp === "object") {
+                    let obj = createProperty(o, propName);
+                    if (obj) {
+                        obj[MP_JSON] = val;
+                    } else if (isRef) {
+                        o[ΔΔpropName] = val;
+                    }
+                } else if (tp === "string") {
+                    if (isRef || factory === ΔfStr) {
+                        o[ΔΔpropName] = val;
+                    }
+                } else if (tp === "number") {
+                    if (isRef || factory === ΔfNbr) {
+                        o[ΔΔpropName] = val;
+                    }
+                } else if (tp === "boolean") {
+                    if (isRef || factory === ΔfBool) {
+                        o[ΔΔpropName] = val;
+                    }
+                } else if (isRef) {
+                    o[ΔΔpropName] = val;
+                }
+            }
+        });
+    }
+    o[MP_JSON] = undefined;
+};
+
 // -----------------------------------------------------------------------------------------------------------------------------
 // trax private apis (generated code)
 
@@ -583,7 +657,7 @@ export function Δf<T>(dataObjectClassRef: Constructor<T>): Factory<T> {
     let f = dataObjectClassRef.ΔFactory;
     if (f) return f;
 
-    function factory(json: Object) {
+    function factory() {
         return new dataObjectClassRef();
     }
     factory[MP_IS_FACTORY] = true;
@@ -630,21 +704,6 @@ export const ΔfRef: Factory<undefined> = $fUndefined as Factory<undefined>;
  * @param isDataNode true if the property is a datanode
  */
 function addPropertyInfo(proto: any, propName: string, isDataNode: boolean, desc: PropertyDescriptor | undefined) {
-    // let nm1 = isDataNode ? "$dProps" : "$vProps",
-    //     nm2 = isDataNode ? "$dProps2" : "$vProps2";
-    // if (!proto[nm1]) {
-    //     proto[nm1] = [];
-    //     proto[nm2] = [];
-    //     proto["$pMap"] = {}; // property map
-    // } else if (!proto.hasOwnProperty(nm1)) {
-    //     // we are in a sub-class of a dataset -> copy the proto arrays
-    //     proto[nm1] = proto[nm1].slice(0);
-    //     proto[nm2] = proto[nm2].slice(0);
-    // }
-    // no: proto[nm1].push(propName);
-    // no: proto[nm2].push("$$" + propName);
-    // proto["$pMap"][propName] = 1;
-    // proto["$$" + propName] = defaultValue;
     if (desc && delete proto[propName]) {
         Object.defineProperty(proto, propName, desc);
     }
@@ -653,72 +712,23 @@ function addPropertyInfo(proto: any, propName: string, isDataNode: boolean, desc
 /**
  * Internal property getter function
  * @param o the Data object on which to get the property
- * @param ΔΔPropName the property name (should start with "$$" - e.g. "$$value")
+ * @param ΔΔPropName the property name (should start with "ΔΔ" - e.g. "ΔΔvalue")
  * @param propName [optional] the json data node property name - should only be set for data node properties. Same value as propName but without the $$ prefix
- * @param cf [optional] the constructor or factory associated with the property Object
+ * @param factory [optional] the constructor or factory associated with the property Object
+ * @param canBeNullOrUndefined [optional] 1=can be null, 2=can be undefined, 3=can be both null or undefined
  */
 function ΔGet<T>(o: TraxObject, ΔΔPropName: string, propName: string, factory: Factory<T>, canBeNullOrUndefined?: 1 | 2 | 3): any {
     if (o.ΔComputeDependencies) {
         o.ΔComputeDependencies[propName] = true;
     }
+
     // console.log("ΔGet", ΔΔPropName)
-    // if (propName && cf && o["$json"]) {
-    //     // init object from json structure
-    //     let json = o["$json"];
-    //     if (json.data) {
-    //         let target = o, $$value: any = undefined;
-    //         if (o.$next) {
-    //             // object is now immutable
-    //             if (o[$$propName] !== undefined) {
-    //                 // prop has already been set
-    //                 return o[$$propName];
-    //             }
-    //             // as object is immutable and as value has never been set on this object
-    //             // we get the value from the last version
-    //             target = latestVersion(target);
-    //         }
-    //         target = target.$mn || target;
+    if (!FORCE_CREATION && o[MP_JSON]) {
+        initObject(o, o[MP_JSON]);
+    }
 
-    //         if (target[$$propName] === undefined) {
-    //             // first time this property is retrieved
-    //             let newCount = (--json.count), // a new property is read
-    //                 jsonValue = json.data[propName];
-    //             if (newCount === 0) {
-    //                 // delete $json.data reference as all dn props have been read
-    //                 json.data = undefined;
-    //                 target["$json"] = undefined;
-    //             }
-    //             if ((jsonValue === undefined || jsonValue === null) && !createDefault) {
-    //                 $$value = null;
-    //             } else {
-    //                 $$value = create(<any>cf, jsonValue);
-    //                 // connect to parent
-    //                 connectChildToParent(target, $$value);
-    //             }
-    //             target[$$propName] = $$value;
-    //         }
-
-    //         if ($$value !== undefined) {
-    //             if (o.$next) {
-    //                 // push new value to all next versions
-    //                 let nd = o, c = 0;
-    //                 while (o.$next && c < MAX_ITERATION) {
-    //                     o[$$propName] = $$value;
-    //                     o = o.$next;
-    //                     c++;
-    //                 }
-    //                 if (c === MAX_ITERATION) {
-    //                     console.error("Hibe error: Max Iteration reached on dataset get");
-    //                 }
-    //                 if (o.$mn) {
-    //                     o.$mn[$$propName] = $$value;
-    //                 }
-    //             }
-    //             return $$value
-    //         }
-    //     }
-    // }
     let value = o[ΔΔPropName];
+    // FORCE_CREATION is true when createProperty is called
     if (value === undefined || (FORCE_CREATION && value === null)) {
         if (!FORCE_CREATION && canBeNullOrUndefined) {
             if (canBeNullOrUndefined > 1) {
@@ -1013,7 +1023,6 @@ class TraxList<T> implements TraxObject {
     ΔIsProxy = false;
     ΔItemFactory: Factory<T>;
     // ΔComputeDependencies: any;           // object set during the processing of a computed property - undefined otherwise
-    // $acceptsJson = true;
 
     constructor(itemFactory: Factory<T>) {
         this.ΔItemFactory = itemFactory;
@@ -1089,6 +1098,32 @@ class TraxList<T> implements TraxObject {
         return "Trax List [" + this.ΔΔList.join(", ") + "]";
     }
 
+    ΔinitFromJson() {
+        const l = this["Δjson"] as any[];
+        if (l) {
+            if (l.constructor !== Array) {
+                console.error("[Trax] Invalid json type: Lists can only be initialized from Arrays");
+            } else {
+                let idx = l.length, itm, ΔΔList: any[] = this.ΔΔList, val;
+                while (idx--) {
+                    val = itm = l[idx];
+                    if (itm) {
+                        const o = (<any>this).ΔItemFactory();
+                        if (isDataObject(o)) {
+                            o["Δjson"] = itm;
+                            val = o;
+                        }
+                        ΔΔList[idx] = val;
+                    } else if (itm === null) {
+                        ΔΔList[idx] = null;
+                    }
+                }
+            }
+
+            this["Δjson"] = undefined;
+        }
+    }
+
     /**
      * Proxy handler method called on each property set
      * @param target the list array (cf. listProxy() factory)
@@ -1123,6 +1158,9 @@ class TraxList<T> implements TraxObject {
             return true;
         }
         let tp = typeof prop;
+        if (this["Δjson"]) {
+            this.ΔinitFromJson();
+        }
         if (tp === "string") {
             if (prop.match(RX_TRAX_PROP)) {
                 return this[prop];
@@ -1266,6 +1304,32 @@ class TraxDict<T> implements TraxObject {
         return res;
     }
 
+    ΔinitFromJson() {
+        const o = this["Δjson"] as any[];
+        if (o) {
+            if (o.constructor !== Object) {
+                console.error("[Trax] Invalid json type: Dictionaries can only be initialized from Objects");
+            } else {
+                const ΔΔDict = this.ΔΔDict;
+                let itm: any, val: any;
+                for (let k in o) if (o.hasOwnProperty(k)) {
+                    val = itm = o[k];
+                    if (itm) {
+                        const v = (<any>this).ΔItemFactory();
+                        if (isDataObject(v)) {
+                            v["Δjson"] = itm;
+                            val = v;
+                        }
+                        ΔΔDict[k] = val;
+                    } else if (itm === null) {
+                        ΔΔDict[k] = null;
+                    }
+                }
+            }
+            this["Δjson"] = undefined;
+        }
+    }
+
     ΔToString() {
         return "Trax Dict {...}";
     }
@@ -1302,6 +1366,9 @@ class TraxDict<T> implements TraxObject {
         }
         if (prop === MP_IS_PROXY) {
             return true;
+        }
+        if (this["Δjson"]) {
+            this.ΔinitFromJson();
         }
         if (prop === Symbol.iterator) {
             return (this.ΔΔDict as any)[Symbol.iterator];

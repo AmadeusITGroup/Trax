@@ -1,4 +1,4 @@
-import { convertToJson, isMutating, changeComplete, JSConversionContext, Data } from '../../trax';
+import { convertToJson, isMutating, changeComplete, JSConversionContext, Data, create } from '../../trax';
 import * as assert from 'assert';
 import { TestNode, initNewArrTestNode } from './fixture';
 
@@ -250,5 +250,45 @@ describe('convertToJson', () => {
             name: "map",
             dict: { a: { value: "item A" }, b: { value: "item B" }, c: null }
         }, "conversion on changed object");
+    });
+
+    it("should return parts of original json when created through create", async function () {
+        let json = { value: "v2", node: { value: "v3", node: { value: "v4" } } },
+            tn = create(TestNode, json), tjs: any;
+
+        assert.equal(isMutating(tn), false, "tn is not mutating");
+        tjs = convertToJson(tn);
+        assert.deepEqual(tjs, json, "tjs is equal to json");
+        assert.strictEqual(tjs.node, json.node, "tjs.node is strictly identical to json.node");
+
+        tn.value = "v3";
+        assert.equal(isMutating(tn), true, "tn is now mutating");
+        tjs = convertToJson(tn);
+        assert.deepEqual(tjs, {
+            value: "v3",
+            node: json.node
+        }, "tjs is equal to json");
+        assert.strictEqual(tjs.node, json.node, "tjs.node is identical to json.node (2)");
+
+        tn.node = new TestNode();
+        tn.node.value = "v4";
+        assert.equal(tn.node["Δjson"], undefined, "new node has no Δjson");
+
+        tjs = convertToJson(tn);
+        assert.deepEqual(tjs, {
+            value: "v3",
+            node: {
+                value: "v4" // node doesn't show up as it has not been created
+            }
+        }, "tjs update");
+
+        await changeComplete(tn);
+        assert.equal(isMutating(tn), false, "tn is not mutating");
+        assert.deepEqual(convertToJson(tn), {
+            value: "v3",
+            node: {
+                value: "v4"
+            }
+        }, "tjs update after mutation");
     });
 });

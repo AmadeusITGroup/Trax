@@ -148,7 +148,6 @@ export function parse(src: string, filePath: string, options?: ParserOptions): (
                         // comment the dataset expression to remove it from generated code (and don't impact line numbers)
                         // this.insert("/* ", d.expression.pos - 1);
                         // this.insert(" */", d.expression.end);
-
                         if (node.getFullText().match(RX_LOG)) {
                             printLogs = true;
                         }

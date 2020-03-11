@@ -1,4 +1,4 @@
-import { TestNode } from './fixture';
+import { TestNode, initNewArrTestNode } from './fixture';
 import * as assert from 'assert';
 import { changeComplete, watch, unwatch, numberOfWatchers, version, commitChanges, isMutating, createNewRefreshContext } from '../../trax';
 
@@ -89,39 +89,39 @@ describe('Watchers', () => {
         assert.equal(version(node2), 1, "node2 in version 1 (2)");
     });
 
-    // it('should support watch and unwatch', async function () {
-    //     let node = initNewArrTestNode(), watcherCalls = 0;
+    it('should support watch and unwatch on lists', async function () {
+        let node = initNewArrTestNode(), watcherCalls = 0;
 
-    //     let watchRef = watch(node, (newNode) => {
-    //         watcherCalls++;
-    //         node = newNode;
-    //     });
+        let watchRef = watch(node, (newNode) => {
+            watcherCalls++;
+            node = newNode as any;
+        });
 
-    //     await changeComplete(node);
+        await changeComplete(node);
 
-    //     assert.equal(watcherCalls, 1, "1 watcher call");
-    //     assert.equal(node.list!.length, 3, "3 items in the node list");
-    //     assert.equal(node.name, "no name", "node name is no name");
+        assert.equal(watcherCalls, 1, "1 watcher call");
+        assert.equal(node.list!.length, 3, "3 items in the node list");
+        assert.equal(node.name, "no name", "node name is no name");
 
-    //     node.name = "ABC";
-    //     let itm = new TestNode();
-    //     itm.value = "last item";
-    //     node.list.push(itm);
+        node.name = "ABC";
+        let itm = new TestNode();
+        itm.value = "last item";
+        node.list.push(itm);
 
-    //     await changeComplete(node);
+        await changeComplete(node);
 
-    //     assert.equal(watcherCalls, 2, "2 watcher calls");
-    //     assert.equal(node.list!.length, 4, "4 items in the node list");
-    //     assert.equal(node.name, "ABC", "node name is ABC");
+        assert.equal(watcherCalls, 2, "2 watcher calls");
+        assert.equal(node.list!.length, 4, "4 items in the node list");
+        assert.equal(node.name, "ABC", "node name is ABC");
 
-    //     unwatch(node, watchRef);
+        unwatch(node, watchRef);
 
-    //     node.name = "ABC2";
+        node.name = "ABC2";
 
-    //     await changeComplete(node);
+        await changeComplete(node);
 
-    //     assert.equal(watcherCalls, 2, "still 2 watcher calls");
-    //     assert.equal(node.list!.length, 4, "4 items in the node list");
-    //     assert.equal(node.name, "ABC2", "node name is now ABC2");
-    // });
+        assert.equal(watcherCalls, 2, "still 2 watcher calls");
+        assert.equal(node.list!.length, 4, "4 items in the node list");
+        assert.equal(node.name, "ABC2", "node name is now ABC2");
+    });
 });
