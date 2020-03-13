@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount, TestNode3 } from "./fixture";
-import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data, computed } from '../../trax';
+import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data, computed, getParents } from '../../trax';
 
 describe('Data objects', () => {
     const MP_META_DATA = "ΔMd", MP_VERSION = "ΔChangeVersion";
@@ -468,5 +468,31 @@ describe('Data objects', () => {
         assert.equal(version(b), 4, "b version 4");
         b.someFunc = function (x) { return x };
         assert.equal(version(b), 5, "b version 5"); // reference change
+    });
+
+    it("should support getParents", async function () {
+        const n1 = new TestNode();
+        n1.value = "node1";
+        assert.equal(getParents(n1), null, "n1 no parents");
+
+        await changeComplete(n1);
+        assert.equal(getParents(n1), null, "n1 no parents (2)");
+
+        const n2 = new TestNode();
+        n2.value = "node2";
+
+        n1.node = n2;
+        assert.deepEqual(getParents(n2), [n1], "n2 parents = [n1]");
+
+        await changeComplete(n2);
+        assert.deepEqual(getParents(n2), [n1], "n2 parents = [n1] (2)");
+
+        n1.node2 = n2;
+        assert.deepEqual(getParents(n2), [n1, n1], "n2 parents = [n1, n1]");
+
+        const n3= new TestNode();
+        n3.value = "node3";
+        n3.node = n2;
+        assert.deepEqual(getParents(n2), [n1, n1, n3], "n2 parents = [n1, n1, n3]");
     });
 });

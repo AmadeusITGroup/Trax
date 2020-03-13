@@ -10,8 +10,7 @@ const MP_TRACKABLE = "ΔTrackable",
     MP_CREATE_PROXY = "ΔCreateProxy",
     MP_NEW_ITEM = "ΔnewItem",
     MP_DISPOSE = "Δdispose",
-    MP_JSON = "Δjson",
-    RX_PROP_NAME = /^ΔΔ(.*)$/;
+    MP_JSON = "Δjson";
 
 let FORCE_CREATION = false;
 
@@ -54,7 +53,7 @@ function initMetaData(o: TraxObject): TraxMetaData | null {
 // -----------------------------------------------------------------------------------------------------------------------------
 // Flex Array functions
 
-// The purpose of FlexArray is to avoid the creation of an Array when we don't need it in most cases (here in 95% of cases)
+// The purpose of FlexArray is to avoid the creation of an Array when we don't need it in most cases (here likely in >90% of cases)
 type FlexArray<T> = T | T[] | undefined;
 
 const $isArray = Array.isArray;
@@ -272,17 +271,27 @@ export function forEachProperty(traxObject: any /*TraxObject*/, processor: (prop
     for (let k in factories) if (factories.hasOwnProperty(k)) {
         processor(k, traxObject["ΔΔ" + k], factories[k]);
     }
-    // for (let k in traxObject) if (traxObject.hasOwnProperty(k) && k.match(RX_PROP_NAME)) {
-    //     processor(RegExp.$1, traxObject[k]);
-    // }
 }
 
 export function hasProperty(traxObject: any /*TraxObject*/, propName: string): boolean {
     return (traxObject && typeof traxObject === "object") ? ("ΔΔ" + propName) in traxObject : false;
 }
 
-export function hasParents(o: any) {
-    return (o['ΔMd'] && !!o['ΔMd'].parents);
+export function hasParents(traxObject: any) {
+    return (traxObject['ΔMd'] && !!traxObject['ΔMd'].parents);
+}
+
+export function getParents(traxObject: any): any[] | null {
+    if (!traxObject['ΔMd']) return null;
+    let p = traxObject['ΔMd'].parents as FlexArray<any>;
+    if (p !== undefined) {
+        if ($isArray(p)) {
+            return p;
+        } else {
+            return [p];
+        }
+    }
+    return null;
 }
 
 export function isDataObject(o: any /*TraxObject*/): boolean {
