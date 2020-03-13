@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as fx from "./fixture";
-import { isMutating, reset, changeComplete } from '../../trax';
+import { isMutating, resetProperty, changeComplete } from '../../trax';
 
 describe('@computed', () => {
 
@@ -14,7 +14,7 @@ describe('@computed', () => {
         assert.equal(atn.listLength, 0, "listLength is 0 by default 2");
         assert.equal(fx.processLengthCounter, initCount + 1, "processor still called once");
 
-        let ls = reset(atn, "list");
+        let ls = resetProperty(atn, "list");
         // list prop changed
         assert.equal(atn.listLength, 0, "listLength is 0 by default 3");
         assert.equal(fx.processLengthCounter, initCount + 2, "processor called twice");

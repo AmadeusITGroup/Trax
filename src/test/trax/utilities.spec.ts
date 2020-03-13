@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList } from "./fixture";
-import { isMutating, changeComplete, version, Data, createProperty, reset, hasProperty, track, untrack } from '../../trax';
+import { isMutating, changeComplete, version, Data, createProperty, resetProperty, hasProperty, track, untrack } from '../../trax';
 
 describe('Trax utilities', () => {
 
@@ -75,28 +75,28 @@ describe('Trax utilities', () => {
         assert.equal(d.value1, undefined, "value1 is undefined");
         d.value1 = 123;
         assert.equal(d.value1, 123, "new value1");
-        v = reset(d, "value1");
+        v = resetProperty(d, "value1");
         assert.equal(v, undefined, "value1 is undefined (2)");
         assert.equal(v, d.value1, "d.value1 reset");
 
         assert.equal(d.value2, null, "value2 is null");
         d.value2 = "abc";
         assert.equal(d.value2, "abc", "new value2");
-        v = reset(d, "value2");
+        v = resetProperty(d, "value2");
         assert.equal(v, null, "value2 is null (2)");
         assert.equal(v, d.value2, "d.value2 reset");
 
         assert.equal(d.value3, "", "value3 is empty string");
         d.value3 = "abc";
         assert.equal(d.value3, "abc", "new value3");
-        v = reset(d, "value3");
+        v = resetProperty(d, "value3");
         assert.equal(v, "", "value3 is empty string (2)");
         assert.equal(v, d.value3, "d.value3 reset");
 
         assert.equal(d.value4, "abc", "value4 is abc");
         d.value4 = "def";
         assert.equal(d.value4, "def", "new value4");
-        v = reset(d, "value4");
+        v = resetProperty(d, "value4");
         assert.equal(v, "abc", "value4 is abc (2)");
         assert.equal(v, d.value4, "d.value4 reset");
 
@@ -104,7 +104,7 @@ describe('Trax utilities', () => {
         d.node.value = "v2";
         let node1 = d.node;
         assert.equal(d.node.value, "v2", "new node value");
-        v = reset(d, "node");
+        v = resetProperty(d, "node");
         assert.equal(v.value, "v1", "node.value is back to v1 (2)");
         assert.equal(v, d.node, "d.node reset");
         assert.notEqual(d.node, node1, "node changed");

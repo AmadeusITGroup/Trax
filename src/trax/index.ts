@@ -416,7 +416,7 @@ export function createProperty(o: any, propName: string | number): any {
  * @param propName the property name
  * @returns the new property value
  */
-export function reset(o: any, propName: string): any {
+export function resetProperty(o: any, propName: string): any {
     if (o && propName) {
         // retrieve the default init value - if any
         let def = o[MP_DEFAULT];
