@@ -1,4 +1,4 @@
-import { TodoApp, createTodo, toggleCompletion, deleteTodo, clearCompleted, toggleAllCompleted, setFilter, startEditing, stopEditing } from './todo';
+import { TodoApp, createTodo, toggleCompletion, deleteTodo, clearCompleted, toggleAllCompleted, setFilter, startEditing, stopEditing, Todo } from './todo';
 import * as assert from 'assert';
 import { watch, changeComplete } from '../../trax';
 
@@ -20,14 +20,13 @@ describe('Todo Service', () => {
                 filter: app.filter, // current selected filter
                 list: []
             }
-            for (let i = 0, len = app.listView.length; len > i; i++) {
-                let itm = app.listView[i]!;
+            app.listView.forEach((item:Todo) => {
                 renderedData.list.push({
-                    completed: itm.completed,
-                    todo: itm.description,
-                    inEdition: itm.editing
+                    completed: item.completed,
+                    todo: item.description,
+                    inEdition: item.editing
                 });
-            }
+            });
         }
         render(todoApp);
 

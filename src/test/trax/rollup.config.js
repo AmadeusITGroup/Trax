@@ -1,5 +1,8 @@
 import typescript from 'rollup-plugin-typescript2';
 import trax from '../../../bin/rollup-plugin-trax';
+import { terser } from 'rollup-plugin-terser';
+
+const production = true;
 
 export default {
     input: `src/test/trax/testapp.ts`,
@@ -15,6 +18,7 @@ export default {
         trax(),
         typescript({
             tsconfig: "tsconfig.rollup.json"
-        })
+        }),
+        production && terser()
     ]
 };
