@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList } from "./fixture";
-import { isMutating, changeComplete, version, Data, createProperty, resetProperty, hasProperty, track, untrack } from '../../trax';
+import { isMutating, changeComplete, version, Data, createProperty, resetProperty, hasProperty, track, untrack, numberOfTrackers, forEachProperty } from '../../trax';
 
 describe('Trax utilities', () => {
 
@@ -140,9 +140,12 @@ describe('Trax utilities', () => {
     it("should allow to synchronously track/untrack the changes occurring on an object", function () {
         let n = new TestNode(), logs: any[] = [];
 
+        assert.equal(numberOfTrackers(n), 0, "0 trackers");
         let f = track(n, function (o: any, operation, propName, oldVal, newVal) {
             logs.push([o === n, operation, propName, oldVal, newVal])
         });
+
+        assert.equal(numberOfTrackers(n), 1, "1 tracker");
 
         let v = n.node.value;
 
@@ -168,6 +171,7 @@ describe('Trax utilities', () => {
         untrack(n, f!);
         n.value = "v5";
         assert.deepEqual(logs, [], "5");
+        assert.equal(numberOfTrackers(n), 0, "0 trackers (2)");
     });
 
     it("should allow to synchronously track/untrack the changes occurring on a list", function () {
@@ -207,6 +211,41 @@ describe('Trax utilities', () => {
             [true, "splice"]
         ], "3");
 
+    });
+
+    it("should support forEachProperty", function () {
+        @Data class User {
+            id: number;
+            email: string;
+            supervisor: User;
+        };
+
+        const u = new User();
+        let arr: string[] = [];
+
+        forEachProperty(u, (name, internalValue) => {
+            arr.push(`${name}: ${internalValue}`);
+        });
+
+        assert.deepEqual(arr, [
+            "id: undefined",
+            "email: undefined",
+            "supervisor: undefined"
+        ], "1");
+
+        u.id = 123;
+        assert.equal(u.email, "", "empty email");
+
+        arr = [];
+        forEachProperty(u, (name, internalValue) => {
+            arr.push(`${name}: ${internalValue}`);
+        });
+
+        assert.deepEqual(arr, [
+            "id: 123",
+            "email: ",
+            "supervisor: undefined"
+        ], "2");
     });
 
 });

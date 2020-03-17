@@ -53,7 +53,7 @@ function __generator(thisArg, body) {
     }
 }
 
-var RX_LOG = /\/\/\s*log[\s$]/, RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/, RX_LEAD_SPACE = /^(\s+)/, SK = SyntaxKind;
+var RX_LOG = /\/\/\s*log[\s$]/, RX_IGNORE_COMMENT = /\/\/\s*trax:\s*ignore/i, RX_LIST_PATTERN = /Array\s*\</, RX_DICT_PATTERN = /(Map\s*\<)|(Set\s*\<)/, RX_REF_DEPTH = /^ref\.depth\(\s*(\d+)\s*\)$/, RX_LEAD_SPACE = /^(\s+)/, UNSUPPORTED_TYPE = 'Unsupported type', SK = SyntaxKind;
 function getSymbols(symbols) {
     var Data = "Data", ref = "ref", computed = "computed";
     if (!symbols) {
@@ -241,7 +241,18 @@ function parse(src, filePath, options) {
                         canBeUndefined_1 = true;
                     }
                     else {
-                        var tp = getTypeObject(c, false);
+                        var tp = void 0;
+                        try {
+                            tp = getTypeObject(c, false);
+                        }
+                        catch (ex) {
+                            if (prop.shallowRef > 0 && ex.message === UNSUPPORTED_TYPE) {
+                                prop.type = { kind: "any" };
+                                return;
+                            }
+                            else
+                                throw ex;
+                        }
                         if (tp) {
                             prop.type = tp;
                         }
@@ -397,7 +408,7 @@ function parse(src, filePath, options) {
                             }
                             dt = getTypeObject(tp, false, false);
                             if (!dt) {
-                                error("Unsupported type", tp);
+                                error(UNSUPPORTED_TYPE, tp);
                                 return null;
                             }
                         }
@@ -411,8 +422,8 @@ function parse(src, filePath, options) {
             }
         }
         if (raiseErrorIfInvalid && n.kind !== SK.Decorator) {
-            // console.log("Unsupported type", n)
-            error("Unsupported type", n);
+            // console.log(UNSUPPORTED_TYPE, n)
+            error(UNSUPPORTED_TYPE, n);
         }
         return null;
     }

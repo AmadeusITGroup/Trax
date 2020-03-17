@@ -230,7 +230,7 @@ export function version(o: any /*DataObject*/): number {
     return (o && o[MP_TRACKABLE] === true) ? o[MP_CHANGE_VERSION] : 0;
 }
 
-export function dispose(traxObject: any /*DataObject*/, recursive = false) {
+export function dispose(traxObject: any /*DataObject*/, recursive = false): void {
     if (!isDataObject(traxObject)) return;
     if (traxObject[MP_DISPOSE]) {
         // traxObject is a collection that exposes Δdispose()
@@ -277,7 +277,7 @@ export function hasProperty(traxObject: any /*TraxObject*/, propName: string): b
     return (traxObject && typeof traxObject === "object") ? ("ΔΔ" + propName) in traxObject : false;
 }
 
-export function hasParents(traxObject: any) {
+export function hasParents(traxObject: any): boolean {
     return (traxObject['ΔMd'] && !!traxObject['ΔMd'].parents);
 }
 
@@ -305,7 +305,7 @@ export function isMutating(o: any /*TraxObject*/): boolean {
 /**
  * Return a promise that will be resolved when the current context has refreshed
  */
-export async function changeComplete(o: any /*TraxObject*/) {
+export async function changeComplete(o: any /*TraxObject*/): Promise<void> {
     if (isMutating(o)) {
         return new Promise(function (resolve) {
             function cb() {
@@ -318,7 +318,7 @@ export async function changeComplete(o: any /*TraxObject*/) {
 }
 
 // return true if changes where committed and if a new refresh context has been created
-export function commitChanges(o: any /*TraxObject*/, forceNewRefreshContext = false) {
+export function commitChanges(o: any /*TraxObject*/, forceNewRefreshContext = false): void {
     if (!o) return;
     let md = (o as TraxObject).ΔMd;
     if (md && md.refreshCtxt) {
@@ -392,11 +392,19 @@ export function track(o: any, fn: TrackFunction): TrackFunction | null {
  * @param o 
  * @param trackFn 
  */
-export function untrack(o: any, trackFn: TrackFunction) {
+export function untrack(o: any, trackFn: TrackFunction): void {
     let md = o ? (o as TraxObject).ΔMd : undefined;
     if (md && trackFn) {
         md.trackers = FA_removeItem(md.trackers, trackFn);
     }
+}
+
+export function numberOfTrackers(o: any): number {
+    let md = (o as TraxObject).ΔMd;
+    if (md) {
+        return FA_length(md.trackers);
+    }
+    return 0;
 }
 
 /**

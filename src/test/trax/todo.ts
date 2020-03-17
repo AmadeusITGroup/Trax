@@ -1,4 +1,4 @@
-import { Data, computed } from '../../trax';
+import { Data, computed, ref } from '../../trax';
 
 @Data export class Todo {
     description = "";
@@ -8,7 +8,7 @@ import { Data, computed } from '../../trax';
 
 @Data export class TodoApp {
     newEntry = "";
-    filter = "ALL"; // todo: support enum and/or "ALL" | "ACTIVE" | "COMPLETED" 
+    @ref filter: "ALL" | "ACTIVE" | "COMPLETED" = "ALL";
     list: Todo[];
 
     @computed get listView(): Todo[] {

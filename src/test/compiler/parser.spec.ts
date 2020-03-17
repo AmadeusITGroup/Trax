@@ -329,7 +329,50 @@ describe('Parser', () => {
                 }
             }]
         }], "1");
-    })
+    });
+
+    it("should support @ref decorator with union types", async function () {
+        let r = parse(`\
+            import { Data } from "./trax";
+            @Data class TodoApp {
+                @ref filter: "ALL" | "ACTIVE" | "COMPLETED" = "ALL";
+            }
+        `, "file1.ts");
+
+        assert.deepEqual(r, [{
+            kind: "import",
+            pos: 20,
+            insertPos: 25,
+            values: { Data: 1 }
+        }, {
+            "className": "TodoApp",
+            "classNameEnd": 74,
+            "decoPos": 55,
+            "kind": "data",
+            "log": false,
+            "members": [
+                {
+                    "defaultValue": {
+                        "end": 144,
+                        "fullText": " \"ALL\"",
+                        "isComplexExpression": false,
+                        "pos": 138,
+                        "text": "\"ALL\""
+                    },
+                    "end": 145,
+                    "kind": "property",
+                    "name": "filter",
+                    "namePos": 98,
+                    "shallowRef": 1,
+                    "shallowRefPos": 93,
+                    "type": {
+                        "kind": "any"
+                    }
+                }
+            ],
+            "pos": 42
+        }]);
+    });
 
     it("should parse base type default values", async function () {
         let r = parse(`\
