@@ -13,14 +13,17 @@ These entities should ideally interact as follows:
 3. actions change the data objects (synchronously or asynchronously)
 4. data changes trigger view updates to keep the view in sync with the new data ... and back to step #2
 
+![mv](docs/imgs/mvc.png?raw=true)
+
+
 In practice this sequence is not so simple to implement as data changes cannot be observed in JS applications. Besides, performance optimizations and scalability require to minimize the number of operations to update a view - so application developers (or UI frameworks) need to know precisely what particular piece of data has changed to produce efficient UIs.
 
-This is where state management libraries come into play as their goal is to offer the following possibilities:
+This is where state management libraries step in as their goal is to offer the following possibilities:
 1. get notified when some data have changed
-2. know which part of the data have changed, and which have not
+2. know which part of the data have changed (and conversely which have not)
 3. ease conversion from/to JSON to store or retrieve data (from a server, a file or local storage)
 
-Many popular state management libraries (such as [redux][], [immerJS][] or [immutableJS]) have decided to use immutability as a way to solve problem #2 (if you are not familiar with **immutability**, it means that an object cannot be changed once created - so that applying changes to an object require to create a new object instance (like for strings in JavaScript): so if data objects are immutable, we just need to compare them to know if they changed). The problem with immutability is that in a JS environment it imposes very painful, fragile and heavy coding patterns.
+Many popular state management libraries (such as [redux][], [immerJS][] or [immutableJS]) have decided to use immutability as a way to solve problem #2 (if you are not familiar with **immutability**, it means that an object cannot be changed once created - so that applying changes to an object requires creating a new object instance (like for strings in JavaScript): so if data objects are immutable, they just need to be compared to know if they changed). The problem with immutability is that in a JS environment it imposes very painful, fragile and heavy coding patterns.
 
 This is why the core idea behind **trax** is to use a **versioning system instead of immutability**.
 
@@ -49,7 +52,7 @@ Here is how the previous MVC sequence is executed in a trax environment (note: m
 
 ## Usage
 
-The previous explanation may give the impression that using trax is complex. It is actually the opposite. From the developer's point of view, here is what it looks like:
+The previous explanation may give the impression that using trax is complex. It is actually the opposite. From the developer's point of view, here is what it looks like.
 
 First, the trax objects have to be defined. Let's imagine for instance that you want to model a list of 'todo' tasks - here is what you would need to write:
 
@@ -88,7 +91,7 @@ const ls = create(TaskList, {name: "dev todos", tasks:[{ description:"assess tra
 
 At this point, the *ls* object is created and can be consumed immediately. 
 
-Now, let's imagine that we want do display the task list in the console:
+As an example, let's imagine that we want do display the task list in the console:
 
 ```js
 function render(tl: TaskList) {
@@ -106,7 +109,7 @@ dev todos:
 1. assess trax
 ```
 
-Then, if you want the console to keep constantly in sync with the ls data, you simply need to watch the *ls* instance and call render again anytime a change is reported:
+Now, if you want the console to keep constantly in sync with the ls data, you simply need to watch the *ls* instance and call render again anytime a change is reported:
 
 ```js
 import { watch } from 'trax';
@@ -142,7 +145,7 @@ ls.tasks.name = "todo - important";
 
 - Web User Interfaces rendering optimization
 - State persistence: cf. convertToJson and create [apis][]
-- Asynchronous UIs: data can be changed from anywhere, anytime
+- Asynchronous UIs: data can be changed from anywhere, anytime, independently form user events
 - Modular client architecture with shared data stores
 - Undo/redo: a data object can be watched and previous versions can be stored / re-hydrated through *convertToJson* & *create* [apis][]
 

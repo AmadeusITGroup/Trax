@@ -2,10 +2,10 @@
 
 <!-- Table of content -->
   * [Data object declaration](#data-object-declaration)
-    + [@Data](#-data)
-    + [@ref](#-ref)
-    + [@computed](#-computed)
-  * [Creation, disposal and to/from JSON conversion](#creation,-disposal-and-to/from-json-conversion)
+    + [@Data](#@data)
+    + [@ref](#@ref)
+    + [@computed](#@computed)
+  * [Creation, disposal and JSON conversion](#creation,-disposal-and-json-conversion)
     + [new operator](#new-operator)
     + [getter auto-creation](#getter-auto-creation)
     + [create<T>(c: Constructor<T> | Factory<T>, json?: Object): T](#create)
@@ -125,7 +125,7 @@ Properties expressed through getters that only depend on their trax object can b
     }
 ```
 
-## Creation, disposal and to/from JSON conversion
+## Creation, disposal and JSON conversion
 
 ### new operator
 The simplest - and most natural - way of creating a trax object is to create it through the new operator:
