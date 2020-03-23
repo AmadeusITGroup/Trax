@@ -30,7 +30,7 @@ export interface TraxMetaData {
 
 export interface Constructor<T> {
     ΔFactory?: Factory<T>;
-    new(): T;
+    new(...args:any[]): T;
 }
 
 export interface Factory<T> {

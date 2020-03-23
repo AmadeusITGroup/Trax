@@ -105,6 +105,8 @@ In case of collections, **@ref.depth** must be used to tell how deep the collect
 }
 ```
 
+Note: **@ref.depth can only be used on Arrays and Dictionaries** - in other word, it will not work on normal trax object properties.
+
 ### @computed
 
 Properties expressed through getters that only depend on their trax object can be flagged with the **@computed** decorator to have their content *[memoized][memoization]* :
