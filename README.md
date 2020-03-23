@@ -132,6 +132,8 @@ ls.tasks.push(create(TodoTask, {description: "check micro-tasks"}));
 ls.tasks.name = "todo - important";
 ```
 
+Note: a more complete example based on the TodoMVC application is available [here][TodoMVC]
+
 ## Benefits
 - extremely simple - actually almost transparent compared to other solutions
 - typescript support (type validation & IDE auto-completion)
@@ -152,6 +154,8 @@ ls.tasks.name = "todo - important";
 
 Full api documentation [here][apis]
 
+Syntax cheat-sheet [here][syntax]
+
 [redux]: https://redux.js.org/
 [immerJS]: https://immerjs.github.io/immer
 [immutableJS]: https://immutable-js.github.io/immutable-js/
@@ -164,3 +168,5 @@ Full api documentation [here][apis]
 [rollup]: https://rollupjs.org/
 [webpack]: https://webpack.js.org/
 [value object]: https://en.wikipedia.org/wiki/Value_object
+[TodoMVC]: ./docs/example.md
+[syntax]: ./docs/summary.md
