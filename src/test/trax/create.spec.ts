@@ -52,9 +52,9 @@ describe('create', () => {
             tn = create(TestNode, json);
 
         assert.equal(tn["Δjson"], undefined, "tn['Δjson'] is undefined");
-        assert.deepEqual(tn["ΔΔnode"].Δjson, { value: "v3", node: { value: "v4" } }, "node json present");
+        assert.deepEqual(tn["ΔΔnode"]["Δjson"], { value: "v3", node: { value: "v4" } }, "node json present");
         assert.equal(tn.node!.value, "v3", "tn.node.value has the right init value");
-        assert.deepEqual(tn["ΔΔnode"].Δjson, undefined, "node json removed");
+        assert.deepEqual(tn["ΔΔnode"]["Δjson"], undefined, "node json removed");
     });
 
     it('should not recreate a removed data object with the old json data', async function () {
@@ -86,7 +86,7 @@ describe('create', () => {
         // WARNING: debugger will call getter function and will reset the $json object!!!
         assert.equal(tn["Δjson"], undefined, "tn json is undefined");
         assert.equal(tn.node!.value, "v3", "node prop is properly initialized");
-        assert.deepEqual(tn["ΔΔnode2"]["Δjson"], { value: "v5" }, "tn.node2 is not initialized");
+        assert.deepEqual(tn["ΔΔnode2"]!["Δjson"], { value: "v5" }, "tn.node2 is not initialized");
         tn.value = "v2bis";
 
         await changeComplete(tn);
