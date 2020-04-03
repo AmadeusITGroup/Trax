@@ -1,0 +1,12 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "module": "es2015",
+        "declaration": true,
+        "outDir": "../typings"
+    },
+    "include": [
+        "compiler/*.ts",
+        "index.ts"
+    ]
+} 

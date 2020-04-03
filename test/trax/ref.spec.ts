@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { changeComplete, Data, ref, version } from '../../trax';
+import { changeComplete, Data, ref, version } from '../../src';
 
 describe('@ref', () => {
     interface NameHolder {

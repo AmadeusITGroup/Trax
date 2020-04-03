@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList } from "./fixture";
-import { isMutating, changeComplete, version, Data, createProperty, resetProperty, hasProperty, track, untrack, numberOfTrackers, forEachProperty } from '../../trax';
+import { isMutating, changeComplete, version, Data, createProperty, resetProperty, hasProperty, track, untrack, numberOfTrackers, forEachProperty } from '../../src';
 
 describe('Trax utilities', () => {
 

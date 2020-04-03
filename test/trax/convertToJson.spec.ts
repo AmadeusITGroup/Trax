@@ -1,4 +1,4 @@
-import { convertToJson, isMutating, changeComplete, JSConversionContext, Data, create } from '../../trax';
+import { convertToJson, isMutating, changeComplete, JSConversionContext, Data, create } from '../../src';
 import * as assert from 'assert';
 import { TestNode, initNewArrTestNode } from './fixture';
 

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as fx from "./fixture";
-import { isMutating, resetProperty, changeComplete } from '../../trax';
+import { isMutating, resetProperty, changeComplete } from '../../src';
 
 describe('@computed', () => {
 

@@ -1,6 +1,6 @@
 import { TestNode, initNewArrTestNode } from './fixture';
 import * as assert from 'assert';
-import { changeComplete, watch, unwatch, numberOfWatchers, version, commitChanges, isMutating, createNewRefreshContext } from '../../trax';
+import { changeComplete, watch, unwatch, numberOfWatchers, version, commitChanges, isMutating, createNewRefreshContext } from '../../src';
 
 describe('Watchers', () => {
 

@@ -1,4 +1,4 @@
-import { isMutating, changeComplete, Data, create, ref, isDataObject } from '../../trax';
+import { isMutating, changeComplete, Data, create, ref, isDataObject } from '../../src';
 import * as assert from 'assert';
 import { TestNode, ArrTestNode } from './fixture';
 

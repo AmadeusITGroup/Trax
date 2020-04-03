@@ -10,3 +10,12 @@ misc/
 .yarnclean
 .rpt2_cache
 yarn-error.log
+
+/test/webpack/test.specs.js
+/test/rollup/test.specs.js
+
+/compiler
+/typings 
+/runtime
+/rollup-plugin
+/webpack-loader

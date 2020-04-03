@@ -1,15 +1,14 @@
 {
 	"compilerOptions": {
-		"declaration": true,
-		"target": "es5",
+		"target": "es2015",
 		"lib": [
 			"es2015",
 			"dom"
 		],
+		"declaration": false,
 		"module": "commonjs",
 		"moduleResolution": "node",
-		"outDir": "./dist",
-		"baseUrl": "./node_modules",
+		
 		"noImplicitAny": false,
 		"sourceMap": true,
 		"noUnusedParameters": false,
@@ -23,10 +22,7 @@
 		"allowUnusedLabels": true,
 		"importHelpers": true,
 		"noEmitHelpers": true,
-		"noEmitOnError": true
-	},
-	"include": [
-		"src/**/*.ts",
-        "src/test/trax/*.ts"
-	]
+		"noEmitOnError": true,
+		"esModuleInterop": true
+	}
 }

@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { changeComplete, Data, version, hasParents, ref, computed, Δf, Δp } from '../../trax';
+import { changeComplete, Data, version, hasParents, ref, computed, Δf, Δp } from '../../src';
 
 describe('Syntax Summary', () => {
 

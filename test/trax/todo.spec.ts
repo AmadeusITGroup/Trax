@@ -1,6 +1,6 @@
 import { TodoApp, createTodo, toggleCompletion, deleteTodo, clearCompleted, toggleAllCompleted, setFilter, startEditing, stopEditing, Todo } from './todo';
 import * as assert from 'assert';
-import { watch, changeComplete } from '../../trax';
+import { watch, changeComplete } from '../../src';
 
 describe('Todo Service', () => {
 
