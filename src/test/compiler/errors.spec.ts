@@ -63,7 +63,7 @@ describe('Compilation errors', () => {
                 bar: "abc";
             }
         `), `
-            TRAX: Unsupported use case [182]
+            TRAX: Unsupported use case [187]
             File: file.ts - Line 5 / Col 22
             Extract: >> bar: "abc"; <<
         `, "4");
