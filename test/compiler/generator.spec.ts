@@ -1,7 +1,7 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate } from '../../trax/compiler/generator';
-import { DataMember } from '../../trax/compiler/types';
+import { generate } from '../../src/compiler/generator';
+import { DataMember } from '../../src/compiler/types';
 import { formatError } from './utils';
 
 describe('Generator', () => {

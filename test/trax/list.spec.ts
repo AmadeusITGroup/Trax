@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, TestList, ArrTestNode, initNewArrTestNode } from './fixture';
-import { isMutating, changeComplete, isDataObject, Data } from '../../trax';
+import { isMutating, changeComplete, isDataObject, Data } from '../../src';
 
 describe('Lists', () => {
 

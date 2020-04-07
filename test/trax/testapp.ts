@@ -1,0 +1,12 @@
+import "./data.spec.ts";
+import "./watch.spec.ts";
+import "./list.spec.ts";
+import "./dict.spec.ts";
+import "./utilities.spec.ts";
+import "./computed.spec.ts";
+import "./todo.spec.ts";
+import "./dispose.spec.ts";
+import "./ref.spec.ts";
+import "./convertToJson.spec.ts";
+import "./create.spec.ts";
+import "./summary.spec.ts";

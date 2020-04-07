@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { generate } from '../../trax/compiler/generator';
+import { generate } from '../../src/compiler/generator';
 import { formatError } from './utils';
 
 describe('Compilation errors', () => {

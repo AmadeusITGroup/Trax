@@ -1,4 +1,4 @@
-import { TraxError } from './../../trax/compiler/types';
+import { TraxError } from './../../src/compiler/types';
 
 export function formatError(err, addLastLine = true) {
     let e = err as TraxError;

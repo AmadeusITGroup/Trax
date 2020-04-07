@@ -1,4 +1,4 @@
-import { Data, computed } from '../../trax';
+import { Data, computed } from '../../src';
 
 export let processLengthCounter = 0;
 

@@ -1,6 +1,6 @@
 // trax:ignore
 import * as assert from 'assert';
-import { parse } from '../../trax/compiler/parser';
+import { parse } from '../../src/compiler/parser';
 
 describe('Parser', () => {
 

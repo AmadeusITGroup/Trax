@@ -1,42 +1,58 @@
 {
-    "name": "trax",
+    "name": "@ivyjs/trax",
     "version": "0.0.1",
     "description": "Trackable data objects",
     "repository": {
-        "type": "git"
+        "type": "git",
+        "url": "https://github.com/AmadeusITGroup/trax"
     },
     "author": "Bertrand Laporte",
     "copyright": "Amadeus s.a.s.",
     "scripts": {
-        "build": "rm -rf dist/ && tsc && yarn plugin",
-        "plugin": "rollup --config rollup.config.js",
-        "test": "rm -rf dist/ && yarn plugin && yarn cp-tests && yarn rp-tests",
-        "cp-tests": "tsc && yarn mocha -r ts-node/register src/test/compiler/*.spec.ts --reporter dot",
-        "rp-tests": "rollup --config src/test/trax/rollup.config.js && yarn mocha dist/rollup.test.specs.js --reporter dot",
-        "wp-tests": "yarn build && yarn wp-tests-no-build",
-        "wp-tests-no-build": "webpack --config-name tests && yarn mocha dist/test.specs.js --reporter dot"
+        "clean": "rimraf compiler runtime typings rollup-plugin webpack-loader",
+        "build": "rollup -c",
+        "prebuild": "yarn clean",
+        "postbuild": "yarn tsd",
+        "pretest:rollup": "path-exists rollup-plugin || yarn build",
+        "pretest:webpack": "path-exists webpack-loader || yarn build",
+        "test": "yarn test:compiler && yarn test:rollup && yarn test:webpack",
+        "test:compiler": "yarn mocha -r ts-node/register test/compiler/*.spec.ts --reporter dot",
+        "test:rollup": "rollup --config test/rollup/rollup.config.js && yarn mocha test/rollup/test.specs.js --reporter dot",
+        "test:webpack": "webpack --config test/webpack/webpack.config.js && yarn mocha test/webpack/test.specs.js --reporter dot",
+        "tsd": "tsc -p src --emitDeclarationOnly"
     },
     "license": "MIT",
-    "bugs": {},
+    "bugs": {
+        "url": "https://github.com/AmadeusITGroup/trax/issues"
+    },
+    "files": [
+        "compiler",
+        "runtime",
+        "typings",
+        "rollup-plugin",
+        "webpack-loader"
+    ],
+    "main": "runtime/index.js",
+    "module": "runtime/index.mjs",
+    "types": "typings/index.d.ts",
     "devDependencies": {
-        "@types/node": "^11.10.4",
+        "@rollup/plugin-typescript": "3.0.0",
         "@types/mocha": "^5.2.6",
+        "@types/node": "^11.10.4",
         "@types/webpack": "^4.4.25",
         "mocha": "^6.0.2",
+        "path-exists-cli": "1.0.0",
+        "rimraf": "3.0.2",
+        "rollup": "2.3.2",
+        "rollup-plugin-terser": "5.3.0",
+        "rollup-pluginutils": "2.8.2",
+        "ts-loader": "6.2.2",
         "ts-node": "^8.0.2",
-        "tslib": "^1.11.1",
-        "typescript": "^3.8.3",
         "webpack": "^4.29.6",
-        "webpack-cli": "^3.3.11",
-        "ts-loader": "^5.3.3",
-        "file-loader": "^3.0.1",
-        "rollup": "^1.32.0",
-        "rollup-plugin-typescript2": "^0.26.0",
-        "rollup-plugin-terser": "^5.3.0",
-        "rollup-pluginutils": "^2.8.2"
+        "webpack-cli": "^3.3.11"
     },
     "dependencies": {
-        "typescript": "^3.8.3",
-        "tslib": "^1.11.1"
+        "tslib": "1.11.1",
+        "typescript": "3.8.3"
     }
 }

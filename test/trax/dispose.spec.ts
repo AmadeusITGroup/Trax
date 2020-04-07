@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { changeComplete, Data, version, dispose, hasParents } from '../../trax';
+import { changeComplete, Data, version, dispose, hasParents } from '../../src';
 import { TestNode } from './fixture';
 
 describe('Dispose', () => {
