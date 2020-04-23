@@ -1,6 +1,15 @@
 import fs from "fs";
 import typescript from "@rollup/plugin-typescript";
 
+const coverageEnabled = process.env.COVERAGE == "true";
+if (coverageEnabled) {
+    console.log("Building with coverage enabled!\nDon't publish the output!");
+}
+
+const coverage_plugin = coverageEnabled ? {
+    transform: require("./test/tsCodeInstrument").instrumentTsCode
+} : {};
+
 const ts_plugin = typescript({
     tsconfig: "src/tsconfig.json",
 });
@@ -33,15 +42,15 @@ export default [
             {
                 file: 'runtime/index.mjs',
                 format: 'esm',
-                sourcemap: true
+                sourcemap: !coverageEnabled
             },
             {
                 file: 'runtime/index.js',
                 format: 'cjs',
-                sourcemap: true
+                sourcemap: !coverageEnabled
             },
         ],
-        plugins: [ ts_plugin ]
+        plugins: [ coverage_plugin, ts_plugin ]
     }, 
     /* Compiler*/
     {
@@ -49,10 +58,10 @@ export default [
         output: {
             file: 'compiler/index.js',
             format: 'cjs',
-            sourcemap: true
+            sourcemap: !coverageEnabled
         },
         external: ['typescript'],
-        plugins: [ ts_plugin ]
+        plugins: [ coverage_plugin, ts_plugin ]
     },
     /* Rollup plugin */
     {
@@ -66,7 +75,7 @@ export default [
             'rollup-pluginutils',
             'fs',
         ],
-        plugins: [ts_plugin]
+        plugins: [coverage_plugin, ts_plugin]
     },
     /* Webpack loader */
     {
@@ -78,6 +87,6 @@ export default [
         external: [
             'typescript',
         ],
-        plugins: [ts_plugin]
+        plugins: [coverage_plugin, ts_plugin]
     }
 ]

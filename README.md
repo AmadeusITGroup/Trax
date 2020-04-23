@@ -1,3 +1,8 @@
+<div align="center">
+  <a href="https://codecov.io/gh/AmadeusITGroup/trax?branch=master">
+    <img src="https://codecov.io/gh/AmadeusITGroup/trax/branch/master/graphs/badge.svg?branch=master" alt="Codecov" />
+  </a>
+</div>
 
 # Trax - Trackable Data Objects
 
