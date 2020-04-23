@@ -29,5 +29,24 @@ jobs:
             yarn-
 
       - run: yarn --frozen-lockfile
+
+      # with coverage instrumentation:
+      - run: yarn build && yarn test
+        env:
+          COVERAGE: "true"
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/compiler/lcov.info
+          flags: compiler
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/rollup/lcov.info
+          flags: rollup
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/webpack/lcov.info
+          flags: webpack
+
+      # without coverage instrumentation:
       - run: yarn build
       - run: yarn test

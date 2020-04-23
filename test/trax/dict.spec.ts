@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { changeComplete, Data, version, hasParents } from '../../src';
+import { changeComplete, Data, version, hasParents } from '../..';
 
 describe('Dictionaries', () => {
 
