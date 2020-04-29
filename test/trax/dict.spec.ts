@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { changeComplete, Data, version, hasParents } from '../..';
+import { changeComplete, Data, version, hasParents, createDictionary } from '../..';
 
 describe('Dictionaries', () => {
 
@@ -240,5 +240,32 @@ describe('Dictionaries', () => {
         });
         assert.equal(arr.join("/"), "m:0:Homer/m:1:Bart/f:0:Marge/f:1:Lisa/f:2:Maggie", "collection content");
         assert.equal(version(d), 2, "d version 2.1");
+    });
+
+    it("should support createDictionary", async function () {
+        const d1 = createDictionary(Person);
+
+        assert.equal(version(d1), 0, "1");
+        d1["a"] = new Person();
+        assert.equal(version(d1), 1, "2");
+        d1["a"].name = "Albert";
+
+        await changeComplete(d1);
+        assert.equal(d1["a"].name, "Albert", "3");
+        assert.equal(version(d1), 2, "4");
+
+        const d2 = createDictionary();
+
+        assert.equal(version(d2), 0, "5");
+        d2["a"] = "abc";
+        assert.equal(version(d2), 1, "6");
+
+        await changeComplete(d2);
+        assert.equal(d2["a"], "abc", "7");
+        assert.equal(version(d2), 2, "8");
+        d2["a"] = "abc";
+        assert.equal(version(d2), 2, "9");
+        d2["a"] = "def";
+        assert.equal(version(d2), 3, "10");
     });
 });

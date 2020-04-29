@@ -1232,7 +1232,7 @@ class TraxList<T> implements TraxObject {
 }
 
 // Creates a list factory for a specific ItemFactory
-export function createList<T>(itemFactory?: Factory<T>): Factory<Array<T>> {
+function $lf<T>(itemFactory?: Factory<T>): Factory<Array<T>> {
     itemFactory = itemFactory || ΔfNull as any;
     function listFactory() { return TraxList.ΔNewProxy(itemFactory!) }
     listFactory[MP_IS_FACTORY] = true;
@@ -1241,7 +1241,7 @@ export function createList<T>(itemFactory?: Factory<T>): Factory<Array<T>> {
     }
     return listFactory as Factory<Array<T>>;
 };
-export let Δlf = createList as <T>(itemFactory?: Factory<T>) => Factory<Array<T>>;
+export let Δlf = $lf as <T>(itemFactory?: Factory<T>) => Factory<Array<T>>;
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // Dictionary classes
@@ -1422,7 +1422,7 @@ class TraxDict<T> implements TraxObject {
 }
 
 // Creates a dictionary factory for a specific ItemFactory
-export function createDictionary<T>(itemFactory?: Factory<T>): Factory<{ [k: string]: T }> {
+function $df<T>(itemFactory?: Factory<T>): Factory<{ [k: string]: T }> {
     itemFactory = itemFactory || ΔfNull as any;
     function dictFactory() {
         return TraxDict.ΔNewProxy(itemFactory!)
@@ -1433,4 +1433,14 @@ export function createDictionary<T>(itemFactory?: Factory<T>): Factory<{ [k: str
     }
     return dictFactory as Factory<{ [k: string]: T }>;
 };
-export const Δdf = createDictionary as <T>(itemFactory?: Factory<T>) => Factory<{ [k: string]: T }>;
+export const Δdf = $df as <T>(itemFactory?: Factory<T>) => Factory<{ [k: string]: T | any }>;
+export function createDictionary<T>(c?: Constructor<T>): { [k: string]: T } {
+    if (c !== undefined) {
+        function itmFactory() {
+            return new c!();
+        }
+        itmFactory[MP_IS_FACTORY] = true;
+        return $df(itmFactory as any)() as any;
+    }
+    return $df()() as { [k: string]: any };
+}
