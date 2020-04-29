@@ -1,4 +1,4 @@
-import { Data, computed } from '../../src';
+import { Data, computed } from '../..';
 
 export let processLengthCounter = 0;
 

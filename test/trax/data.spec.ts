@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TestNode, SubTestNode, SimpleNode, AnyNode, TestNode2, resetCount, TestNode3 } from "./fixture";
-import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data, computed, getParents } from '../../src';
+import { isMutating, changeComplete, isDataObject, version, numberOfWatchers, Data, computed, getParents } from '../..';
 
 describe('Data objects', () => {
     const MP_META_DATA = "ΔMd", MP_VERSION = "ΔChangeVersion";

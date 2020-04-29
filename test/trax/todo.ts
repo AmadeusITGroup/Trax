@@ -1,4 +1,4 @@
-import { Data, computed, ref } from '../../src';
+import { Data, computed, ref } from '../..';
 
 @Data export class Todo {
     description = "";

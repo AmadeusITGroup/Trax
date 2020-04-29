@@ -1,4 +1,4 @@
-import { convertToJson, isMutating, changeComplete, JSConversionContext, Data, create } from '../../src';
+import { convertToJson, isMutating, changeComplete, JSConversionContext, Data, create } from '../..';
 import * as assert from 'assert';
 import { TestNode, initNewArrTestNode } from './fixture';
 
