@@ -1436,11 +1436,12 @@ function $df<T>(itemFactory?: Factory<T>): Factory<{ [k: string]: T }> {
 export const Δdf = $df as <T>(itemFactory?: Factory<T>) => Factory<{ [k: string]: T | any }>;
 export function createDictionary<T>(c?: Constructor<T>): { [k: string]: T } {
     if (c !== undefined) {
-        function itmFactory() {
-            return new c!();
-        }
         itmFactory[MP_IS_FACTORY] = true;
         return $df(itmFactory as any)() as any;
     }
     return $df()() as { [k: string]: any };
+
+    function itmFactory() {
+        return new c!();
+    }
 }
