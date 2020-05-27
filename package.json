@@ -1,6 +1,6 @@
 {
-    "name": "@ivyjs/trax",
-    "version": "1.0.0-alpha.1",
+    "name": "@ivy-js/trax",
+    "version": "1.0.0-alpha.2",
     "description": "Trackable data objects",
     "repository": {
         "type": "git",
