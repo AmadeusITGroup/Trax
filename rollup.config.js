@@ -25,7 +25,8 @@ fs.writeFileSync('compiler/package.json', `{
 // Rollup plugin local package.json
 fs.mkdirSync('rollup-plugin', { recursive: true });
 fs.writeFileSync('rollup-plugin/package.json', `{
-    "main": "index.js"
+    "main": "index.js",
+    "module": "index.mjs"
 }`);
 
 // Webpack loader local package.json
@@ -66,10 +67,18 @@ export default [
     /* Rollup plugin */
     {
         input: 'src/rollup/rollup-plugin-trax.ts',
-        output: {
-            file: 'rollup-plugin/index.js',
-            format: 'es'
-        },
+        output: [
+            {
+                file: 'rollup-plugin/index.mjs',
+                format: 'esm',
+                sourcemap: false
+            },
+            {
+                file: 'rollup-plugin/index.js',
+                format: 'cjs',
+                sourcemap: false
+            }
+        ],
         external: [
             'typescript',
             'rollup-pluginutils',

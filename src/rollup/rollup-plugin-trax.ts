@@ -1,7 +1,7 @@
 import { createFilter } from 'rollup-pluginutils';
 import { generate } from '../compiler/generator';
 
-export default function ivy(opts: { include?: any; exclude?: any;} = {}) {
+export default function trax(opts: { include?: any; exclude?: any;} = {}) {
     if (!opts.include) {
         opts.include = '**/*.ts'
     }
